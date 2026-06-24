@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Log Wellness - Smart Wellness{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card p-4 p-md-5 border-0 shadow-sm rounded-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0">Daily Wellness Log</h2>
+                        <p class="text-muted mb-0">Record your indicators to track and analyze your wellness patterns</p>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('wellness.log_entry') }}" class="needs-validation">
+                    <!-- CSRF Token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row g-4">
+                        <!-- Date Picker -->
+                        <div class="col-md-6">
+                            <label for="log_date" class="form-label fw-bold">Log Date</label>
+                            <input type="date" class="form-control py-2.5 rounded-3" id="log_date" name="log_date" 
+                                   value="{{ today }}" max="{{ today }}" required>
+                            <div class="form-text">Defaults to today. Future dates are blocked.</div>
+                        </div>
+                        
+                        <!-- Sleep Hours -->
+                        <div class="col-md-6">
+                            <label for="sleep_hours" class="form-label fw-bold">Sleep Hours</label>
+                            <input type="number" class="form-control py-2.5 rounded-3" id="sleep_hours" name="sleep_hours" 
+                                   min="0.0" max="16.0" step="0.5" value="7.0" required>
+                            <div class="form-text">Enter sleep duration (e.g. 7.5). Range: 0 - 16 hours.</div>
+                        </div>
+                        
+                        <hr class="my-4 text-slate-200">
+                        
+                        <!-- Mood Slider -->
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="mood_score" class="form-label fw-bold mb-0">Daily Mood</label>
+                                <span class="badge bg-primary rounded-pill px-3 py-2 fw-semibold" id="mood_preview">3 - Neutral 😐</span>
+                            </div>
+                            <input type="range" class="form-range" id="mood_score" name="mood_score" 
+                                   min="1" max="5" step="1" value="3" required>
+                            <div class="d-flex justify-content-between px-1 small text-muted">
+                                <span>1 - Very Low 😢</span>
+                                <span>2 - Low 🙁</span>
+                                <span>3 - Neutral 😐</span>
+                                <span>4 - Good 🙂</span>
+                                <span>5 - Excellent 😄</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Stress Level Slider -->
+                        <div class="col-12 mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="stress_level" class="form-label fw-bold mb-0">Stress Level</label>
+                                <span class="badge bg-success rounded-pill px-3 py-2 fw-semibold" id="stress_preview">3 - Moderate 🟡</span>
+                            </div>
+                            <input type="range" class="form-range" id="stress_level" name="stress_level" 
+                                   min="1" max="5" step="1" value="3" required>
+                            <div class="d-flex justify-content-between px-1 small text-muted">
+                                <span class="text-success fw-semibold">1 - Peaceful 🟢</span>
+                                <span class="text-success-emphasis">2 - Low 🟢</span>
+                                <span class="text-warning">3 - Moderate 🟡</span>
+                                <span class="text-danger-emphasis">4 - High 🔴</span>
+                                <span class="text-danger fw-bold">5 - Severe 🔥</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Sleep Quality Slider -->
+                        <div class="col-12 mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="sleep_quality" class="form-label fw-bold mb-0">Sleep Quality</label>
+                                <span class="badge bg-info text-dark rounded-pill px-3 py-2 fw-semibold" id="sleep_q_preview">3 - Average ⭐⭐⭐</span>
+                            </div>
+                            <input type="range" class="form-range" id="sleep_quality" name="sleep_quality" 
+                                   min="1" max="5" step="1" value="3" required>
+                            <div class="d-flex justify-content-between px-1 small text-muted">
+                                <span>1 - Restless ⭐</span>
+                                <span>2 - Poor ⭐⭐</span>
+                                <span>3 - Average ⭐⭐⭐</span>
+                                <span>4 - Good ⭐⭐⭐⭐</span>
+                                <span>5 - Restful ⭐⭐⭐⭐⭐</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Academic Workload Slider -->
+                        <div class="col-12 mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="academic_workload" class="form-label fw-bold mb-0">Academic Workload</label>
+                                <span class="badge bg-secondary rounded-pill px-3 py-2 fw-semibold" id="workload_preview">3 - Moderate 📚</span>
+                            </div>
+                            <input type="range" class="form-range" id="academic_workload" name="academic_workload" 
+                                   min="1" max="5" step="1" value="3" required>
+                            <div class="d-flex justify-content-between px-1 small text-muted">
+                                <span class="text-success">1 - Very Light 🍃</span>
+                                <span class="text-success-emphasis">2 - Light 🍃</span>
+                                <span class="text-warning">3 - Moderate 📚</span>
+                                <span class="text-danger-emphasis">4 - Heavy 📝</span>
+                                <span class="text-danger">5 - Overwhelming 🤯</span>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4 text-slate-200">
+                        
+                        <!-- Optional Notes -->
+                        <div class="col-12">
+                            <label for="notes" class="form-label fw-bold">Personal Notes <span class="text-muted small fw-normal">(Optional)</span></label>
+                            <textarea class="form-control rounded-3" id="notes" name="notes" rows="3" 
+                                      placeholder="Reflect on your day, triggers of stress, or study accomplishments..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-3 mt-4">
+                        <a href="{{ url_for('wellness.dashboard') }}" class="btn btn-outline-secondary px-4 py-2.5 rounded-3">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-5 py-2.5 rounded-3">Save Wellness Entry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Real-time slider preview listeners
+    const moodSlider = document.getElementById('mood_score');
+    const moodPreview = document.getElementById('mood_preview');
+    const moodTexts = {
+        1: "1 - Very Low 😢",
+        2: "2 - Low 🙁",
+        3: "3 - Neutral 😐",
+        4: "4 - Good 🙂",
+        5: "5 - Excellent 😄"
+    };
+    moodSlider.addEventListener('input', (e) => {
+        moodPreview.innerText = moodTexts[e.target.value];
+    });
+
+    const stressSlider = document.getElementById('stress_level');
+    const stressPreview = document.getElementById('stress_preview');
+    const stressTexts = {
+        1: "1 - Peaceful 🟢",
+        2: "2 - Low 🟢",
+        3: "3 - Moderate 🟡",
+        4: "4 - High 🔴",
+        5: "5 - Severe 🔥"
+    };
+    stressSlider.addEventListener('input', (e) => {
+        stressPreview.innerText = stressTexts[e.target.value];
+        
+        // Dynamically change badge color based on stress
+        stressPreview.className = "badge rounded-pill px-3 py-2 fw-semibold";
+        if (e.target.value <= 2) {
+            stressPreview.classList.add('bg-success');
+        } else if (e.target.value == 3) {
+            stressPreview.classList.add('bg-warning', 'text-dark');
+        } else {
+            stressPreview.classList.add('bg-danger');
+        }
+    });
+
+    const sleepQSlider = document.getElementById('sleep_quality');
+    const sleepQPreview = document.getElementById('sleep_q_preview');
+    const sleepQTexts = {
+        1: "1 - Restless ⭐",
+        2: "2 - Poor ⭐⭐",
+        3: "3 - Average ⭐⭐⭐",
+        4: "4 - Good ⭐⭐⭐⭐",
+        5: "5 - Restful ⭐⭐⭐⭐⭐"
+    };
+    sleepQSlider.addEventListener('input', (e) => {
+        sleepQPreview.innerText = sleepQTexts[e.target.value];
+    });
+
+    const workloadSlider = document.getElementById('academic_workload');
+    const workloadPreview = document.getElementById('workload_preview');
+    const workloadTexts = {
+        1: "1 - Very Light 🍃",
+        2: "2 - Light 🍃",
+        3: "3 - Moderate 📚",
+        4: "4 - Heavy 📝",
+        5: "5 - Overwhelming 🤯"
+    };
+    workloadSlider.addEventListener('input', (e) => {
+        workloadPreview.innerText = workloadTexts[e.target.value];
+        
+        // Dynamically change badge color
+        workloadPreview.className = "badge rounded-pill px-3 py-2 fw-semibold";
+        if (e.target.value <= 2) {
+            workloadPreview.classList.add('bg-success-subtle', 'text-success', 'border', 'border-success-subtle');
+        } else if (e.target.value == 3) {
+            workloadPreview.classList.add('bg-secondary');
+        } else {
+            workloadPreview.classList.add('bg-danger-subtle', 'text-danger', 'border', 'border-danger-subtle');
+        }
+    });
+</script>
+{% endblock %}

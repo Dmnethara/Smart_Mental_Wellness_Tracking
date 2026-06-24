@@ -51,23 +51,32 @@ class WellnessLog(db.Model):
 @event.listens_for(WellnessLog, 'before_update')
 def calculate_wellness_score(mapper, connection, target):
     """
-    Computes wellness_score based on mood, stress, sleep quality, and academic workload.
-    Formula maps the sum of positive indicators (mood, sleep quality) and 
-    inverted negative indicators (6 - stress, 6 - workload) to a scale of 20 to 100.
+    Computes wellness_score based on the project's Day 4 data science formula:
+    score = (mood*20 + (6-stress)*20 + sleep_q*20 + min(sleep_h/8, 1)*20 + (6-workload)*20) / 5
+    Maps the 5 dimensions to a 0 to 100 scale.
     """
     try:
         mood = int(target.mood_score)
         stress = int(target.stress_level)
-        sleep = int(target.sleep_quality)
+        sleep_q = int(target.sleep_quality)
+        sleep_h = float(target.sleep_hours)
         workload = int(target.academic_workload)
         
-        # Verify scores are in valid 1-5 range
-        for val in [mood, stress, sleep, workload]:
+        # Validate values are in correct range to prevent corrupt data
+        for val in [mood, stress, sleep_q, workload]:
             if not (1 <= val <= 5):
-                raise ValueError("Scores must be between 1 and 5")
-                
-        # Calculate score: sum ranges from 4 to 20. Multiplying by 5 maps it to 20 to 100.
-        target.wellness_score = (mood + (6 - stress) + sleep + (6 - workload)) * 5.0
-    except (TypeError, ValueError) as e:
+                raise ValueError("Indicators must be between 1 and 5")
+        if not (0.0 <= sleep_h <= 16.0):
+            raise ValueError("Sleep hours must be between 0 and 16")
+            
+        # Calculate individual components (each max 20, sum max 100)
+        mood_comp = mood * 20
+        stress_comp = (6 - stress) * 20
+        sleep_q_comp = sleep_q * 20
+        sleep_h_comp = min(sleep_h / 8.0, 1.0) * 20
+        workload_comp = (6 - workload) * 20
+        
+        target.wellness_score = (mood_comp + stress_comp + sleep_q_comp + sleep_h_comp + workload_comp) / 5.0
+    except (TypeError, ValueError):
         # Fallback in case of invalid or missing values
         target.wellness_score = 0.0

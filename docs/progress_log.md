@@ -49,3 +49,31 @@
     * [index.html](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/templates/index.html): Custom landing page with direct access to user dashboards and quick action links.
   * Created automated unit and integration tests in [test_auth.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/test_auth.py) covering all registration, login, and role-based route constraints.
   * Verified 100% test pass using `pytest`.
+
+## Day 4: Wellness Data Entry & CRUD Module
+* **Date:** 2026-06-25
+* **Milestones:**
+  * Updated [models.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/models.py) with the specific Day 4 wellness score formula:
+    `wellness_score = (mood*20 + (6-stress)*20 + sleep_q*20 + min(sleep_h/8, 1)*20 + (6-workload)*20) / 5`
+  * Implemented server-side validation in [wellness.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/wellness.py) for all range limits, future logging checks, and duplicate date constraints.
+  * Developed robust CRUD routes:
+    * `/log` (GET/POST): Form with Bootstrap range sliders, dynamic value previews, and date controls.
+    * `/history` (GET): Displays log history in a clean, paginated table (10 items/page) using Flask-SQLAlchemy `paginate()`.
+    * `/log/edit/<id>` (GET/POST): Secure editing pre-filled with historical metrics. Checks log ownership.
+    * `/log/delete/<id>` (POST): Secure POST-only deletion of records. Features dynamic JavaScript confirmations.
+  * Implemented rigorous ownership verification for edit and delete routes.
+
+## Day 5: Dashboard & Interactive Analytics Charts
+* **Date:** 2026-06-25
+* **Milestones:**
+  * Developed [dashboard.html](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/templates/dashboard.html) featuring 4 responsive summary cards (average mood, average stress, logging streak, and overall wellness progress).
+  * Programmed custom Python algorithms in [wellness.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/wellness.py):
+    * **Streak Algorithm**: Counts consecutive logging days backwards from today/yesterday.
+    * **Risk Engine**: Chronological window check that flags high stress ($\ge 4$) for 5 consecutive calendar days.
+  * Integrated 4 interactive Chart.js visualizations:
+    * *Mood Trend Chart*: Smooth teal line chart showing daily variations.
+    * *Stress Average Chart*: Weekly averages dynamically color-coded (green/orange/red).
+    * *Sleep Correlation Chart*: Dual-axis chart combining bar (sleep duration) and line (sleep quality).
+    * *Wellness Index Trend*: Indigo line chart mapping the computed data science metric.
+  * Developed automated test suite in [test_wellness.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/test_wellness.py) covering formula logic, validations, CRUD operations, streaks, and risk engine warnings.
+  * Verified 100% test pass (all 12 tests) via `pytest`.

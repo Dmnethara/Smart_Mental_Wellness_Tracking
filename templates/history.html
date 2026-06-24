@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}History - Smart Wellness{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+            <div>
+                <h2 class="fw-bold mb-0">Wellness History</h2>
+                <p class="text-muted mb-0">Review, modify, or delete your previous daily wellness records</p>
+            </div>
+            <div>
+                <a href="{{ url_for('wellness.log_entry') }}" class="btn btn-primary px-4 py-2.5 rounded-3 d-inline-flex align-items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Log New Entry</span>
+                </a>
+            </div>
+        </div>
+
+        {% if logs %}
+            <!-- Table View -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle border-slate-100">
+                    <thead class="table-light">
+                        <tr class="text-secondary small uppercase">
+                            <th class="py-3 px-4" style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">Date</th>
+                            <th class="py-3">Mood</th>
+                            <th class="py-3">Stress</th>
+                            <th class="py-3">Sleep</th>
+                            <th class="py-3">Workload</th>
+                            <th class="py-3">Wellness Score</th>
+                            <th class="py-3 px-4 text-end" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td class="py-3.5 px-4 fw-bold text-slate-900">{{ log.log_date.strftime("%b %d, %Y") }}</td>
+                                <td class="py-3.5">
+                                    <span class="fs-5">
+                                        {% if log.mood_score == 1 %}😢{% elif log.mood_score == 2 %}🙁{% elif log.mood_score == 3 %}😐{% elif log.mood_score == 4 %}🙂{% else %}😄{% endif %}
+                                    </span>
+                                    <span class="small text-muted">({{ log.mood_score }}/5)</span>
+                                </td>
+                                <td class="py-3.5">
+                                    <span class="badge 
+                                        {% if log.stress_level <= 2 %}bg-success-subtle text-success border border-success-subtle
+                                        {% elif log.stress_level == 3 %}bg-warning-subtle text-warning-emphasis border border-warning-subtle
+                                        {% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} px-2.5 py-1 rounded-2 small">
+                                        Level {{ log.stress_level }}
+                                    </span>
+                                </td>
+                                <td class="py-3.5">
+                                    <span class="fw-semibold">{{ log.sleep_hours }} hrs</span>
+                                    <span class="small text-muted">(Quality: {{ log.sleep_quality }}/5)</span>
+                                </td>
+                                <td class="py-3.5">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1 rounded-2 small">
+                                        Level {{ log.academic_workload }}
+                                    </span>
+                                </td>
+                                <td class="py-3.5">
+                                    {% set score = log.wellness_score | float %}
+                                    <span class="badge 
+                                        {% if score >= 70.0 %}bg-success text-white
+                                        {% elif score >= 40.0 %}bg-warning text-dark
+                                        {% else %}bg-danger text-white{% endif %} px-3 py-2 rounded-pill fw-bold font-monospace" style="font-size: 0.9rem;">
+                                        {{ score }}%
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="{{ url_for('wellness.edit_entry', log_id=log.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Edit</a>
+                                        
+                                        <!-- Safe POST-only delete button with confirmation -->
+                                        <form action="{{ url_for('wellness.delete_entry', log_id=log.id) }}" method="POST" 
+                                              onsubmit="return confirm('Are you sure you want to delete this log for {{ log.log_date.strftime('%b %d, %Y') }}? This action is permanent.');" 
+                                              style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% if log.notes %}
+                                <tr class="bg-light bg-opacity-50">
+                                    <td colspan="7" class="py-2 px-4 small text-muted text-start" style="border-top: none;">
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-secondary"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                            <span class="fst-italic">Notes: {{ log.notes }}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            {% if pagination.pages > 1 %}
+                <nav class="d-flex justify-content-center mt-4">
+                    <ul class="pagination">
+                        <!-- Previous Page -->
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-line page-link" href="{{ url_for('wellness.history', page=pagination.prev_num) if pagination.has_prev else '#' }}">Previous</a>
+                        </li>
+                        
+                        <!-- Page Numbers -->
+                        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('wellness.history', page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <!-- Next Page -->
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-line page-link" href="{{ url_for('wellness.history', page=pagination.next_num) if pagination.has_next else '#' }}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            {% endif %}
+            
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5 my-3">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light text-secondary rounded-circle p-4 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <h3 class="fw-bold h4">No Wellness Entries Yet</h3>
+                <p class="text-muted mx-auto" style="max-width: 400px;">Begin recording your daily mood, sleep hours, stress, and study workload to generate analytical trends.</p>
+                <a href="{{ url_for('wellness.log_entry') }}" class="btn btn-primary px-4 py-2.5 rounded-3 mt-2">Log Your First Entry</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

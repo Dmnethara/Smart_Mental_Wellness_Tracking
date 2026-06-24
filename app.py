@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for
 from flask_wtf.csrf import CSRFProtect
 from flask_login import current_user
 from config import Config
@@ -27,9 +27,15 @@ def create_app(config_class=Config):
     from auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint)
     
+    from wellness import wellness as wellness_blueprint
+    app.register_blueprint(wellness_blueprint)
+    
     # Home landing page route
     @app.route('/')
     def home():
+        # Redirect to dashboard if logged in, otherwise show landing page
+        if current_user.is_authenticated:
+            return redirect(url_for('wellness.dashboard'))
         return render_template('index.html')
         
     return app

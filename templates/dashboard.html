@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Wellness{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        border-radius: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+    }
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px -5px rgb(0 0 0 / 0.08);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #e2e8f0;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+    .streak-fire {
+        color: #f97316;
+        animation: flicker 1.5s infinite alternate;
+    }
+    @keyframes flicker {
+        0% { transform: scale(1); opacity: 0.9; }
+        100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.4)); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    
+    <!-- 1. Risk Engine Alert Banner -->
+    {% if show_risk_banner %}
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 p-4 mb-4" role="alert">
+            <div class="d-flex align-items-start gap-3">
+                <div class="bg-danger bg-opacity-15 text-danger rounded-circle p-2.5 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <div>
+                    <h4 class="alert-heading fw-bold mb-1" style="font-size: 1.15rem;">High Stress Warning</h4>
+                    <p class="mb-0 fw-medium">High stress levels (Level 4 or 5) have been detected for 5 consecutive days. Consider speaking to a university counselor or accessing support services.</p>
+                    <div class="mt-3">
+                        <a href="mailto:counselor@susl.lk" class="btn btn-danger btn-sm rounded-pill px-4 py-2 text-white border-0" style="background-color: #dc2626;">Contact Student Counselor</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Welcome & Header Section -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-5 mt-2">
+        <div>
+            <h1 class="fw-extrabold text-slate-900 mb-1">Hello, {{ current_user.name }}</h1>
+            <p class="text-muted mb-0">Here is your daily wellness dashboard and mental health analytics summary</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('wellness.history') }}" class="btn btn-outline-secondary px-4 py-2.5 rounded-3 fw-medium">View History</a>
+            <a href="{{ url_for('wellness.log_entry') }}" class="btn btn-primary px-4 py-2.5 rounded-3 fw-medium d-inline-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Log Daily Wellness</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Summary Statistics Cards -->
+    <div class="row g-4 mb-5">
+        <!-- Avg Mood Card -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card metric-card h-100 p-4 shadow-sm bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary fw-semibold small uppercase">Avg Mood (7d)</span>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                    </div>
+                </div>
+                <h2 class="display-6 fw-bold text-slate-900 mb-2">{{ avg_mood }}</h2>
+                <p class="text-muted small mb-0">Daily emotional state index</p>
+            </div>
+        </div>
+
+        <!-- Avg Stress Card -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card metric-card h-100 p-4 shadow-sm bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary fw-semibold small uppercase">Avg Stress (7d)</span>
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                    </div>
+                </div>
+                <h2 class="display-6 fw-bold {{ stress_class }} mb-2">{{ avg_stress }}</h2>
+                <p class="text-muted small mb-0">Academic and life stress level</p>
+            </div>
+        </div>
+
+        <!-- Logging Streak Card -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card metric-card h-100 p-4 shadow-sm bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary fw-semibold small uppercase">Logging Streak</span>
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-2">
+                        <svg class="streak-fire" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-fire" viewBox="0 0 16 16"><path d="M8 16c3.314 0 6-2 6-5.5 0-1.5-.5-4-2.5-6 .25 1.5-1.25 2-1.25 2C11 4 9 .5 6 0c.357 2 .5 4-2 6-1.25 1-2 2.729-2 4.5C2 14 4.686 16 8 16Zm0-1c-2.21 0-4-1.285-4-3.5 0-1.026.546-2.087 1.562-2.91.464-.376.629-.717.513-1.152-.089-.333-.16-.67-.217-1.002.556.812 1.561 1.752 1.95 2.56.224.465.514.907.86 1.287.115.126.228.252.336.379-.525.211-.906.58-1.16 1.074a.428.428 0 0 0 .068.459c.078.09.186.14.3.14.07 0 .14-.02.2-.054.305-.17.653-.298 1.024-.298.544 0 1.096.333 1.393.816a.428.428 0 0 0 .363.204H8Z"/></svg>
+                    </div>
+                </div>
+                <h2 class="display-6 fw-bold text-slate-900 mb-2">{{ streak }} <span class="fs-4 fw-normal text-muted">days</span></h2>
+                <p class="text-muted small mb-0">Consecutive logging streak</p>
+            </div>
+        </div>
+
+        <!-- Wellness Score Card -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card metric-card h-100 p-4 shadow-sm bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary fw-semibold small uppercase">Wellness Index (30d)</span>
+                    <div class="bg-success bg-opacity-10 text-success rounded-3 p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                    </div>
+                </div>
+                <h2 class="display-6 fw-bold text-slate-900 mb-2">{{ avg_wellness }}%</h2>
+                <!-- Overall Wellness Score progress bar -->
+                <div class="progress-bar-custom mt-2">
+                    <div class="progress-bar-fill 
+                        {% if avg_wellness >= 70.0 %}bg-success
+                        {% elif avg_wellness >= 40.0 %}bg-warning
+                        {% else %}bg-danger{% endif %}" 
+                        style="width: {{ avg_wellness }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Interactive Charts Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Mood Trend (Line) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h3 class="fw-bold h5 mb-3">Daily Mood Trend <span class="fw-normal small text-muted">(30 Days)</span></h3>
+                <div class="chart-container">
+                    <canvas id="moodChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 2: Stress Averages (Bar) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h3 class="fw-bold h5 mb-3">Stress Level Averages <span class="fw-normal small text-muted">(Weekly Averages)</span></h3>
+                <div class="chart-container">
+                    <canvas id="stressChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 3: Sleep Dual-Axis (Bar/Line) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h3 class="fw-bold h5 mb-3">Sleep Duration & Quality Correlation</h3>
+                <div class="chart-container">
+                    <canvas id="sleepChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 4: Wellness Score Trend (Line) -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 text-slate-900">
+                <h3 class="fw-bold h5 mb-3">Computed Wellness Index Trend <span class="fw-normal small text-muted">(0-100 Metric)</span></h3>
+                <div class="chart-container">
+                    <canvas id="wellnessChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Include Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 1. Mood Trend Line Chart (Teal, smooth bezier curves)
+    const moodRaw = {{ chart_data.mood | safe }};
+    const ctxMood = document.getElementById('moodChart').getContext('2d');
+    new Chart(ctxMood, {
+        type: 'line',
+        data: {
+            labels: moodRaw.labels,
+            datasets: [{
+                label: 'Mood Score (1-5)',
+                data: moodRaw.data,
+                borderColor: '#14b8a6', // Teal
+                backgroundColor: 'rgba(20, 184, 166, 0.08)',
+                fill: true,
+                tension: 0.4, // Smooth bezier curves
+                borderWidth: 3.5,
+                pointBackgroundColor: '#14b8a6',
+                pointRadius: moodRaw.data.length > 15 ? 1.5 : 4.0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { min: 1, max: 5, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Stress Bar Chart (Weekly averages, dynamically color-coded)
+    const stressRaw = {{ chart_data.stress | safe }};
+    const ctxStress = document.getElementById('stressChart').getContext('2d');
+    
+    // Dynamic color coding: green < 3, orange 3-4, red > 4
+    const barColors = stressRaw.data.map(val => {
+        if (val === 0) return 'rgba(226, 232, 240, 0.5)'; // empty state gray
+        if (val < 3.0) return '#10b981'; // Green
+        if (val <= 4.0) return '#f59e0b'; // Orange
+        return '#ef4444'; // Red
+    });
+
+    new Chart(ctxStress, {
+        type: 'bar',
+        data: {
+            labels: stressRaw.labels,
+            datasets: [{
+                label: 'Avg Stress Level',
+                data: stressRaw.data,
+                backgroundColor: barColors,
+                borderRadius: 8,
+                borderWidth: 0,
+                barThickness: 35
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { min: 0, max: 5, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 3. Sleep Dual-Axis Chart (Sleep Hours as bar, Sleep Quality as line)
+    const sleepRaw = {{ chart_data.sleep | safe }};
+    const ctxSleep = document.getElementById('sleepChart').getContext('2d');
+    new Chart(ctxSleep, {
+        type: 'bar',
+        data: {
+            labels: sleepRaw.labels,
+            datasets: [
+                {
+                    label: 'Sleep Hours',
+                    type: 'bar',
+                    data: sleepRaw.hours,
+                    backgroundColor: 'rgba(99, 102, 241, 0.55)', // Indigo bar
+                    borderRadius: 6,
+                    yAxisID: 'y',
+                    barThickness: sleepRaw.hours.length > 15 ? 8 : 16
+                },
+                {
+                    label: 'Sleep Quality (1-5)',
+                    type: 'line',
+                    data: sleepRaw.quality,
+                    borderColor: '#f43f5e', // Rose line
+                    backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12 } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    min: 0,
+                    max: 16,
+                    title: { display: true, text: 'Hours Slept' }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    min: 1,
+                    max: 5,
+                    grid: { drawOnChartArea: false }, // Avoid grid overlap
+                    title: { display: true, text: 'Sleep Quality Rating' }
+                }
+            }
+        }
+    });
+
+    // 4. Wellness Score Trend (Line, highlighted computed data science metric)
+    const wellnessRaw = {{ chart_data.wellness | safe }};
+    const ctxWellness = document.getElementById('wellnessChart').getContext('2d');
+    
+    // Create subtle gradient for wellness line
+    const gradient = ctxWellness.createRadialGradient(50, 50, 50, 100, 100, 100);
+    
+    new Chart(ctxWellness, {
+        type: 'line',
+        data: {
+            labels: wellnessRaw.labels,
+            datasets: [{
+                label: 'Wellness Index',
+                data: wellnessRaw.data,
+                borderColor: '#4f46e5', // Royal Indigo
+                backgroundColor: 'rgba(79, 70, 229, 0.08)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 4,
+                pointBackgroundColor: '#4f46e5',
+                pointRadius: wellnessRaw.data.length > 15 ? 1.5 : 4.0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: 'Wellness Score (%)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}
