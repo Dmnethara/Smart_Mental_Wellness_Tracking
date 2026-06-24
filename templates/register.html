@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Smart Wellness{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card p-4 p-md-5 mt-4">
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle p-3 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-plus"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    </div>
+                    <h2 class="fw-bold mb-1">Create Account</h2>
+                    <p class="text-muted">Register to start tracking your mental wellness</p>
+                </div>
+                
+                <form method="POST" action="{{ url_for('auth.register') }}">
+                    <!-- CSRF Token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-semibold">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required placeholder="Nethara Vidmanthi">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reg_number" class="form-label fw-semibold">Registration Number</label>
+                        <input type="text" class="form-control" id="reg_number" name="reg_number" required placeholder="23CDS0847">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-semibold">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="nethara@susl.lk">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-semibold">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+                        <div class="form-text small text-muted">Must be at least 8 characters and include at least 1 number.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label fw-semibold">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required placeholder="••••••••">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-2.5 mt-3 mb-4">Register</button>
+                </form>
+                
+                <div class="text-center">
+                    <p class="mb-0 text-muted">Already have an account? <a href="{{ url_for('auth.login') }}" class="text-primary fw-semibold text-decoration-none">Login Here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

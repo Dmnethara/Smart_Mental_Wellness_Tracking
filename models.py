@@ -1,10 +1,14 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
 from flask_login import UserMixin
 from sqlalchemy import event
 
-# Initialize SQLAlchemy
+# Initialize Extensions
 db = SQLAlchemy()
+bcrypt = Bcrypt()
+login_manager = LoginManager()
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'

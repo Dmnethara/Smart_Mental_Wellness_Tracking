@@ -1,31 +1,132 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Mental Wellness</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-    <div class="container text-center mt-5 pt-5">
-        <h1 class="text-primary fw-bold mb-4">Smart Mental Wellness Tracking System</h1>
-        <p class="lead text-muted mb-5">Track your mood, sleep, and stress levels to maintain a healthy study-life balance.</p>
-        
-        <div class="row justify-content-center">
+{% block title %}Home - Smart Wellness Tracking & Analytics{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    {% if current_user.is_authenticated %}
+        <!-- Dashboard View for Authenticated Users -->
+        <div class="row align-items-center mb-5 mt-3">
+            <div class="col-lg-8">
+                <h1 class="fw-extrabold text-slate-900 mb-1">Student Wellness Dashboard</h1>
+                <p class="lead text-muted">Manage your mental well-being, log daily activities, and analyze your academic balance.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <span class="text-muted small">Local Time: {{ datetime }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Access Metrics / Navigation Cards -->
+        <div class="row g-4">
+            <!-- Logging Card -->
             <div class="col-md-4">
-                <div class="card shadow-sm p-4">
-                    <h3>Get Started</h3>
-                    <p>Monitor your daily wellness trends today.</p>
-                    <a href="#" class="btn btn-primary btn-lg mt-2">Login / Register</a>
+                <div class="card h-100 p-4 border-0 shadow-sm transition-hover">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 p-3 mb-4 style-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </div>
+                    <h3 class="fw-bold h5 mb-2">Daily Wellness Log</h3>
+                    <p class="text-muted small mb-4">Record your mood, sleep quality, stress levels, and academic workload to track patterns over time.</p>
+                    <a href="#" class="btn btn-primary w-100 py-2.5 mt-auto">Log Daily Wellness</a>
+                </div>
+            </div>
+
+            <!-- Analytics Card -->
+            <div class="col-md-4">
+                <div class="card h-100 p-4 border-0 shadow-sm transition-hover">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-3 p-3 mb-4 style-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    </div>
+                    <h3 class="fw-bold h5 mb-2">Visual Analytics</h3>
+                    <p class="text-muted small mb-4">View interactive charts and historical trends of your stress patterns, sleep hours, and overall wellness index.</p>
+                    <a href="#" class="btn btn-success w-100 py-2.5 mt-auto border-0 text-white" style="background-color: #10b981;">View Wellness Trends</a>
+                </div>
+            </div>
+
+            <!-- Reports Card -->
+            <div class="col-md-4">
+                <div class="card h-100 p-4 border-0 shadow-sm transition-hover">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-3 p-3 mb-4 style-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    </div>
+                    <h3 class="fw-bold h5 mb-2">PDF Wellness Reports</h3>
+                    <p class="text-muted small mb-4">Generate and download comprehensive, print-ready reports containing your weekly or monthly wellness data and analytics.</p>
+                    <a href="#" class="btn btn-warning w-100 py-2.5 mt-auto border-0 text-dark" style="background-color: #f59e0b;">Export PDF Report</a>
                 </div>
             </div>
         </div>
-    </div>
+        
+    {% else %}
+        <!-- Landing View for Guest / Anonymous Users -->
+        <div class="row align-items-center justify-content-between py-5 mt-3">
+            <div class="col-lg-6 mb-5 mb-lg-0">
+                <h1 class="display-4 fw-extrabold text-slate-900 mb-3 lh-sm">
+                    Track Your Well-Being, <br>
+                    <span class="text-primary">Elevate Your Academics.</span>
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Specifically designed for university students to record mood, stress, and sleep indicators. Gain immediate visual insights to balance academic workload and maintain mental health.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4 py-3 shadow">Create Free Account</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-lg px-4 py-3">Login to Dashboard</a>
+                </div>
+            </div>
+            
+            <div class="col-lg-5">
+                <div class="card p-4 p-md-5 shadow-lg border-0 bg-white rounded-4">
+                    <h3 class="fw-bold text-center mb-3">Get Started Now</h3>
+                    <p class="text-muted text-center small mb-4">Join our system to monitor your daily wellness trends, workload, and stress levels.</p>
+                    
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </div>
+                            <div>
+                                <h4 class="fw-semibold h6 mb-1">Simple Daily Logging</h4>
+                                <p class="text-muted small mb-0">Log stress levels, mood, sleep hours, and notes in under 60 seconds.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </div>
+                            <div>
+                                <h4 class="fw-semibold h6 mb-1">Deep Visual Insights</h4>
+                                <p class="text-muted small mb-0">Interactive dashboards analyze your workload to prevent burnout.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </div>
+                            <div>
+                                <h4 class="fw-semibold h6 mb-1">Secure & Protected</h4>
+                                <p class="text-muted small mb-0">Role-based authentication and secure session encryption safeguard your data.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary w-100 py-2.5 mt-4">Join Now</a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<style>
+    .transition-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .transition-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+    }
+    .style-icon {
+        width: 60px;
+        height: 60px;
+    }
+</style>
+{% endblock %}

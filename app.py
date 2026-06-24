@@ -1,23 +1,21 @@
-from flask import Flask
-from flask_bcrypt import Bcrypt
-from flask_login import LoginManager
+from flask import Flask, render_template
+from flask_wtf.csrf import CSRFProtect
+from flask_login import current_user
 from config import Config
-from models import db
+from models import db, bcrypt, login_manager
 
-# Initialize extensions
-bcrypt = Bcrypt()
-login_manager = LoginManager()
-login_manager.login_view = 'auth.login'
-login_manager.login_message_category = 'info'
+# Initialize CSRF protection
+csrf = CSRFProtect()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Initialize database and other extensions with app context
+    # Initialize extensions with app context
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
     
     # User loader for Flask-Login
     @login_manager.user_loader
@@ -25,10 +23,14 @@ def create_app(config_class=Config):
         from models import User
         return User.query.get(int(user_id))
         
-    # Route for verifying system status
+    # Register blueprints
+    from auth import auth as auth_blueprint
+    app.register_blueprint(auth_blueprint)
+    
+    # Home landing page route
     @app.route('/')
     def home():
-        return "System Online"
+        return render_template('index.html')
         
     return app
 
