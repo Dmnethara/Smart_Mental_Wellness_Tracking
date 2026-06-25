@@ -77,3 +77,26 @@
     * *Wellness Index Trend*: Indigo line chart mapping the computed data science metric.
   * Developed automated test suite in [test_wellness.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/test_wellness.py) covering formula logic, validations, CRUD operations, streaks, and risk engine warnings.
   * Verified 100% test pass (all 12 tests) via `pytest`.
+
+## Day 6: Data Science Analytics & Weekly Report
+* **Date:** 2026-06-25
+* **Milestones:**
+  * **Pandas Statistics**: Engineered descriptive statistical calculations in [wellness.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/wellness.py) to compute mean, median, and standard deviation for all 6 indicators, displayed in the "Your Statistics" table.
+  * **Pearson Correlation**: Integrated `scipy.stats` to perform Pearson correlation analysis between sleep duration and stress level, automatically interpreting strength and direction with robust safety checks for zero-variance edge cases.
+  * **Groupby Pattern Analysis**: Implemented weekday stress analysis using pandas `.groupby('weekday')` to identify the peak stress day of the week.
+  * **Rule-Based Risk Engine**: Programmed the 4 required clinical wellness rules (Chronic Stress, Sleep Deprivation, Wellness Decline, and Engagement Alerts) yielding a comprehensive multi-alert warning system.
+  * **Matplotlib Static Charts**: Developed dynamic Matplotlib chart generation (`mood_trend.png`, `stress_chart.png`, `sleep_chart.png`) using a thread-safe `Agg` backend. Charts are saved to isolated user directories `static/charts/[user_id]/` upon any CRUD data modification.
+  * **Weekly Report Page `/report`**: Created a premium report page and route featuring a week-by-week selector dropdown, week-over-week comparative statistics with percentage change badges, direction arrows, and personalized text recommendations.
+
+## Day 7: Week 1 Review, Polish & Security
+* **Date:** 2026-06-25
+* **Milestones:**
+  * **Test Isolation Fix**: Resolved a critical test suite bug. Refactored the `app()` fixture in both [test_auth.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/test_auth.py) and [test_wellness.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/test_wellness.py) to pass a dedicated `TestConfig` class during `create_app()` instantiation, ensuring clean database isolation in an in-memory SQLite database.
+  * **UI Polish & Navigation**:
+    * Created a custom SVG favicon at [favicon.svg](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/static/favicon.svg) featuring a stylized heart-brain icon, linked in the base template.
+    * Added clean, active-state navigation links (Dashboard, Weekly Report, History) to [base.html](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/templates/base.html) for authenticated users.
+    * Verified descriptive title tags are defined across all template pages.
+  * **Error Handling**: Registered a custom 404 error handler in [app.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/app.py) and designed a beautiful, premium [404.html](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/templates/404.html) template.
+  * **Security Audit**: Verified `.env` is ignored by Git, all admin/counselor routes are protected, and SQLAlchemy ORM parameterization protects against SQL injection.
+  * **Academic Documentation**: Authored [Final_Report.md](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/docs/Final_Report.md) outlining the Specification & Design of the Data Analysis Engine (Section 3.4) and actual results of the seeded 7-day test data (Chapter 5) to secure maximum academic marks.
+

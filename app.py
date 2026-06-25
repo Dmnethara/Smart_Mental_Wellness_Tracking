@@ -38,6 +38,11 @@ def create_app(config_class=Config):
             return redirect(url_for('wellness.dashboard'))
         return render_template('index.html')
         
+    # 404 Error Handler
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template('404.html'), 404
+        
     return app
 
 if __name__ == '__main__':

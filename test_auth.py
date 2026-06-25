@@ -2,16 +2,17 @@ import pytest
 from app import create_app
 from models import db, User
 
+class TestConfig:
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    WTF_CSRF_ENABLED = False
+    SECRET_KEY = "test-secret-key"
+    SERVER_NAME = "localhost"
+
 @pytest.fixture
 def app():
-    # Create the app with test configurations
-    app = create_app()
-    app.config.update({
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "WTF_CSRF_ENABLED": False,  # Disable CSRF for unit testing endpoints
-        "SECRET_KEY": "test-secret-key"
-    })
+    # Create the app with test configurations loaded from the start
+    app = create_app(TestConfig)
     
     with app.app_context():
         db.create_all()

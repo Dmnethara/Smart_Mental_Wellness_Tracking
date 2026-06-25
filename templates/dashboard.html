@@ -42,18 +42,40 @@
 {% block content %}
 <div class="container py-3">
     
-    <!-- 1. Risk Engine Alert Banner -->
-    {% if show_risk_banner %}
-        <div class="alert alert-danger border-0 shadow-sm rounded-4 p-4 mb-4" role="alert">
-            <div class="d-flex align-items-start gap-3">
-                <div class="bg-danger bg-opacity-15 text-danger rounded-circle p-2.5 mt-0.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                </div>
-                <div>
-                    <h4 class="alert-heading fw-bold mb-1" style="font-size: 1.15rem;">High Stress Warning</h4>
-                    <p class="mb-0 fw-medium">High stress levels (Level 4 or 5) have been detected for 5 consecutive days. Consider speaking to a university counselor or accessing support services.</p>
-                    <div class="mt-3">
-                        <a href="mailto:counselor@susl.lk" class="btn btn-danger btn-sm rounded-pill px-4 py-2 text-white border-0" style="background-color: #dc2626;">Contact Student Counselor</a>
+    <!-- 1. Risk Engine Alert Board -->
+    {% if active_alerts %}
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#ef4444" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <h3 class="fw-bold h5 mb-0 text-slate-900">Active Wellness & Risk Alerts</h3>
+                    </div>
+                    <div class="d-flex flex-column gap-3">
+                        {% for alert in active_alerts %}
+                            <div class="alert alert-{{ alert.level }} border-0 shadow-none rounded-3 m-0 p-3">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <span class="fs-5">
+                                            {% if alert.id == 'chronic_stress' %}⚠️
+                                            {% elif alert.id == 'sleep_deprivation' %}🌙
+                                            {% elif alert.id == 'wellness_decline' %}📉
+                                            {% elif alert.id == 'engagement' %}📅
+                                            {% endif %}
+                                        </span>
+                                        <div>
+                                            <h5 class="alert-heading fw-bold mb-1" style="font-size: 1rem;">{{ alert.title }}</h5>
+                                            <p class="mb-0 small fw-medium text-dark">{{ alert.description }}</p>
+                                        </div>
+                                    </div>
+                                    {% if alert.action_url %}
+                                        <div>
+                                            <a href="{{ alert.action_url }}" class="btn btn-{{ alert.level }} btn-sm px-3 rounded-pill fw-semibold border border-{{ alert.level }}">{{ alert.action_text }}</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -136,6 +158,104 @@
                         {% elif avg_wellness >= 40.0 %}bg-warning
                         {% else %}bg-danger{% endif %}" 
                         style="width: {{ avg_wellness }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 3. Advanced Statistics & Insights Row -->
+    <div class="row g-4 mb-5">
+        <!-- Your Statistics Card -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold h5 mb-0 text-slate-900">Your Statistics</h3>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 text-xs">Pandas Engine Enabled</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-sm">
+                        <thead class="table-light">
+                           <tr>
+                               <th>Metric</th>
+                               <th class="text-center">Mean (Avg)</th>
+                               <th class="text-center">Median (Mid)</th>
+                               <th class="text-center">Std Deviation</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           <tr>
+                               <td><strong>Emotional Mood</strong> (1-5)</td>
+                               <td class="text-center">{{ stats.mood_score.mean }}</td>
+                               <td class="text-center">{{ stats.mood_score.median }}</td>
+                               <td class="text-center">{{ stats.mood_score.std }}</td>
+                           </tr>
+                           <tr>
+                               <td><strong>Stress Level</strong> (1-5)</td>
+                               <td class="text-center">{{ stats.stress_level.mean }}</td>
+                               <td class="text-center">{{ stats.stress_level.median }}</td>
+                               <td class="text-center">{{ stats.stress_level.std }}</td>
+                           </tr>
+                           <tr>
+                               <td><strong>Sleep Duration</strong> (Hours)</td>
+                               <td class="text-center">{{ stats.sleep_hours.mean }}</td>
+                               <td class="text-center">{{ stats.sleep_hours.median }}</td>
+                               <td class="text-center">{{ stats.sleep_hours.std }}</td>
+                           </tr>
+                           <tr>
+                               <td><strong>Sleep Quality</strong> (1-5)</td>
+                               <td class="text-center">{{ stats.sleep_quality.mean }}</td>
+                               <td class="text-center">{{ stats.sleep_quality.median }}</td>
+                               <td class="text-center">{{ stats.sleep_quality.std }}</td>
+                           </tr>
+                           <tr>
+                               <td><strong>Academic Workload</strong> (1-5)</td>
+                               <td class="text-center">{{ stats.academic_workload.mean }}</td>
+                               <td class="text-center">{{ stats.academic_workload.median }}</td>
+                               <td class="text-center">{{ stats.academic_workload.std }}</td>
+                           </tr>
+                           <tr class="table-success-subtle">
+                               <td><strong>Wellness Index</strong> (0-100)</td>
+                               <td class="text-center font-bold text-success">{{ stats.wellness_score.mean }}%</td>
+                               <td class="text-center">{{ stats.wellness_score.median }}%</td>
+                               <td class="text-center">{{ stats.wellness_score.std }}</td>
+                           </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Data Science Insights Card -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h3 class="fw-bold h5 mb-3 text-slate-900">Advanced Data Science Insights</h3>
+                
+                <!-- Pearson Correlation Section -->
+                <div class="p-3 mb-3 bg-light rounded-3 border-start border-primary border-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="fs-5">📊</span>
+                        <h4 class="fw-bold mb-0" style="font-size: 0.95rem;">Pearson Correlation Analysis</h4>
+                    </div>
+                    <p class="mb-0 text-sm text-slate-700 font-medium italic">
+                        {{ correlation_msg }}
+                    </p>
+                    <p class="mb-0 text-xs text-muted mt-2">
+                        Measures the linear correlation between your sleep hours and stress level. An r close to -1 indicates that longer sleep is strongly associated with lower stress levels.
+                    </p>
+                </div>
+
+                <!-- Weekday Pattern Section -->
+                <div class="p-3 bg-light rounded-3 border-start border-success border-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="fs-5">📅</span>
+                        <h4 class="fw-bold mb-0" style="font-size: 0.95rem;">Day-of-Week Pattern Analysis</h4>
+                    </div>
+                    <p class="mb-0 text-sm text-slate-700 font-semibold text-success">
+                        {{ weekday_msg }}
+                    </p>
+                    <p class="mb-0 text-xs text-muted mt-2">
+                        Uses pandas groupby to calculate your average stress per day of the week to identify recurring weekly pressure points.
+                    </p>
                 </div>
             </div>
         </div>

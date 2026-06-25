@@ -2,18 +2,19 @@ import pytest
 from datetime import datetime, timedelta
 from app import create_app
 from models import db, User, WellnessLog
-from wellness import calculate_streak, check_high_stress_risk
+from wellness import calculate_streak, check_high_stress_risk, compute_analytics, run_risk_engine, generate_static_charts
+
+class TestConfig:
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    WTF_CSRF_ENABLED = False
+    SECRET_KEY = "test-secret-key"
+    SERVER_NAME = "localhost"
 
 @pytest.fixture
 def app():
-    # Create the app with test configurations
-    app = create_app()
-    app.config.update({
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "WTF_CSRF_ENABLED": False,  # Disable CSRF for unit testing endpoints
-        "SECRET_KEY": "test-secret-key"
-    })
+    # Create the app with test configurations loaded from the start
+    app = create_app(TestConfig)
     
     with app.app_context():
         db.create_all()
@@ -286,3 +287,163 @@ def test_risk_engine_logic(app):
             db.session.add(log)
         db.session.commit()
         assert check_high_stress_risk(user.id) is False
+
+def test_pandas_analytics_and_correlation(app):
+    """Test pandas statistics, Pearson correlation, and edge cases."""
+    with app.app_context():
+        user = User(name='Nethara', reg_number='23CDS0847', email='nethara@susl.lk', 
+                    password_hash='hashed_password', role='student')
+        db.session.add(user)
+        db.session.commit()
+        
+        # Test Case 1: Empty logs
+        stats, corr, wday = compute_analytics([])
+        assert stats['mood_score']['mean'] == 0.0
+        assert "Requires at least 2 logs" in corr
+        assert "No logs recorded" in wday
+        
+        # Test Case 2: 1 log (standard deviation should be 0, correlation N/A)
+        log1 = WellnessLog(user_id=user.id, log_date=datetime.now().date(), mood_score=4, stress_level=2, 
+                           sleep_hours=8.0, sleep_quality=4, academic_workload=2)
+        db.session.add(log1)
+        db.session.commit()
+        
+        stats, corr, wday = compute_analytics([log1])
+        assert stats['mood_score']['mean'] == 4.0
+        assert stats['mood_score']['std'] == 0.0
+        assert "Requires more logs" in corr
+        
+        # Test Case 3: 2 logs with identical values (zero standard deviation edge case)
+        log2 = WellnessLog(user_id=user.id, log_date=datetime.now().date() - timedelta(days=1), mood_score=4, stress_level=2, 
+                           sleep_hours=8.0, sleep_quality=4, academic_workload=2)
+        db.session.add(log2)
+        db.session.commit()
+        
+        stats, corr, wday = compute_analytics([log1, log2])
+        assert stats['sleep_hours']['mean'] == 8.0
+        assert stats['sleep_hours']['std'] == 0.0
+        assert "Requires more logs" in corr  # standard deviation is zero, so correlation is N/A
+        
+        # Test Case 4: Multiple logs with varied values (valid correlation)
+        # We add logs that have a perfect negative correlation: sleep hours increase, stress decreases
+        WellnessLog.query.filter_by(user_id=user.id).delete()
+        db.session.commit()
+        
+        today = datetime.now().date()
+        logs = [
+            WellnessLog(user_id=user.id, log_date=today, mood_score=4, stress_level=2, sleep_hours=8.0, sleep_quality=4, academic_workload=2),
+            WellnessLog(user_id=user.id, log_date=today - timedelta(days=1), mood_score=3, stress_level=3, sleep_hours=7.0, sleep_quality=3, academic_workload=3),
+            WellnessLog(user_id=user.id, log_date=today - timedelta(days=2), mood_score=2, stress_level=4, sleep_hours=6.0, sleep_quality=2, academic_workload=4),
+            WellnessLog(user_id=user.id, log_date=today - timedelta(days=3), mood_score=1, stress_level=5, sleep_hours=5.0, sleep_quality=1, academic_workload=5)
+        ]
+        db.session.add_all(logs)
+        db.session.commit()
+        
+        stats, corr, wday = compute_analytics(logs)
+        assert stats['sleep_hours']['mean'] == 6.5
+        assert stats['stress_level']['mean'] == 3.5
+        assert stats['sleep_hours']['std'] > 0
+        assert "r=-1.0" in corr or "negative" in corr
+
+def test_weekday_stress_pattern(app):
+    """Test pandas groupby identifies highest stress day correctly."""
+    with app.app_context():
+        user = User(name='Nethara', reg_number='23CDS0847', email='nethara@susl.lk', 
+                    password_hash='hashed_password', role='student')
+        db.session.add(user)
+        db.session.commit()
+        
+        # Log stress levels: High stress on Wednesday (stress = 5), low on other days
+        monday_date = datetime.strptime("2026-06-15", "%Y-%m-%d").date()
+        wednesday_date = datetime.strptime("2026-06-17", "%Y-%m-%d").date()
+        
+        log1 = WellnessLog(user_id=user.id, log_date=monday_date, mood_score=4, stress_level=2, 
+                           sleep_hours=8.0, sleep_quality=4, academic_workload=2)
+        log2 = WellnessLog(user_id=user.id, log_date=wednesday_date, mood_score=2, stress_level=5, 
+                           sleep_hours=6.0, sleep_quality=2, academic_workload=5)
+        db.session.add_all([log1, log2])
+        db.session.commit()
+        
+        stats, corr, wday = compute_analytics([log1, log2])
+        assert "Wednesday" in wday
+        assert "avg 5.0/5" in wday
+
+def test_rule_based_risk_engine_all_rules(app):
+    """Test all 4 rules in the Rule-Based Risk Engine."""
+    with app.test_request_context():
+        user = User(name='Nethara', reg_number='23CDS0847', email='nethara@susl.lk', 
+                    password_hash='hashed_password', role='student')
+        db.session.add(user)
+        db.session.commit()
+        
+        # 1. Test Rule 4 (Engagement Alert) when empty
+        alerts = run_risk_engine(user.id)
+        assert any(a['id'] == 'engagement' for a in alerts)
+        
+        # 2. Test Rule 1 (Chronic Stress) and Rule 2 (Sleep Deprivation)
+        today = datetime.now().date()
+        logs = []
+        for i in range(3):
+            logs.append(WellnessLog(
+                user_id=user.id,
+                log_date=today - timedelta(days=i),
+                mood_score=2,
+                stress_level=4,
+                sleep_hours=5.5,  # Trigger sleep deprivation (sleep < 6.0)
+                sleep_quality=2,
+                academic_workload=4
+            ))
+        db.session.add_all(logs)
+        db.session.commit()
+        
+        alerts = run_risk_engine(user.id)
+        assert any(a['id'] == 'sleep_deprivation' for a in alerts)
+        assert any(a['id'] == 'chronic_stress' for a in alerts)
+        
+        # 3. Test Rule 3 (Wellness Decline)
+        WellnessLog.query.filter_by(user_id=user.id).delete()
+        db.session.commit()
+        
+        log_early = WellnessLog(
+            user_id=user.id,
+            log_date=today - timedelta(days=5),
+            mood_score=5,
+            stress_level=1,
+            sleep_hours=8.0,
+            sleep_quality=5,
+            academic_workload=1
+        )
+        log_late = WellnessLog(
+            user_id=user.id,
+            log_date=today,
+            mood_score=1,
+            stress_level=5,
+            sleep_hours=4.0,
+            sleep_quality=1,
+            academic_workload=5
+        )
+        db.session.add_all([log_early, log_late])
+        db.session.commit()
+        
+        alerts = run_risk_engine(user.id)
+        assert any(a['id'] == 'wellness_decline' for a in alerts)
+
+def test_report_page_route(logged_in_client, app):
+    """Test that the /report page loads successfully and contains expected elements."""
+    today = datetime.now().date()
+    response = logged_in_client.post('/log', data={
+        'log_date': today.isoformat(),
+        'mood_score': 4,
+        'stress_level': 2,
+        'sleep_hours': 8.0,
+        'sleep_quality': 4,
+        'academic_workload': 2,
+        'notes': 'Self-care day'
+    }, follow_redirects=True)
+    
+    response = logged_in_client.get('/report')
+    assert response.status_code == 200
+    assert b"Weekly Wellness Report" in response.data
+    assert b"Your Statistics" not in response.data
+    assert b"Personalized Recommendations" in response.data
+    assert b"Static Charts Preview" in response.data

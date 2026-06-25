@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Weekly Report - Smart Wellness{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        border-radius: 16px;
+        border: none;
+    }
+    .metric-trend {
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 0.25em 0.5em;
+        border-radius: 6px;
+    }
+    .static-chart-img {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        transition: transform 0.2s ease;
+    }
+    .static-chart-img:hover {
+        transform: scale(1.02);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    
+    <!-- Page Header & Week Selector -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 mt-2">
+        <div>
+            <h1 class="fw-extrabold text-slate-900 mb-1">Weekly Wellness Report</h1>
+            <p class="text-muted mb-0">Review your detailed mental health analytics, trends, and clinical recommendations</p>
+        </div>
+        <div>
+            <form method="GET" action="{{ url_for('wellness.report') }}" class="d-flex align-items-center gap-2">
+                <label for="week" class="fw-semibold text-nowrap mb-0 text-sm">Select Week:</label>
+                <select name="week" id="week" class="form-select rounded-3 shadow-sm" onchange="this.form.submit()">
+                    {% for w in weeks %}
+                        <option value="{{ w.key }}" {% if w.key == selected_week %}selected{% endif %}>{{ w.label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Alerts Notification Board -->
+    {% if active_alerts %}
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white border-start border-danger border-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="fs-4">⚠️</span>
+                <h3 class="fw-bold h5 mb-0 text-slate-900">Weekly Health & Risk Warnings</h3>
+            </div>
+            <div class="d-flex flex-column gap-2.5">
+                {% for alert in active_alerts %}
+                    <div class="alert alert-{{ alert.level }} border-0 shadow-none rounded-3 m-0 p-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="fs-5">
+                                {% if alert.id == 'chronic_stress' %}⚠️
+                                {% elif alert.id == 'sleep_deprivation' %}🌙
+                                {% elif alert.id == 'wellness_decline' %}📉
+                                {% elif alert.id == 'engagement' %}📅
+                                {% endif %}
+                            </span>
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ alert.title }}</h6>
+                                <p class="mb-0 small fw-medium text-dark">{{ alert.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Week-over-Week Metrics Summary Grid -->
+    <div class="row g-4 mb-4">
+        {% for key, data in averages.items() %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card report-card h-100 p-4 shadow-sm bg-white">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="text-secondary fw-semibold small uppercase">{{ data.name }}</span>
+                        {% if data.pct_change != 'N/A' %}
+                            <span class="metric-trend {{ data.class }} bg-opacity-10 bg-current">
+                                {{ data.arrow }} {{ data.pct_change }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-muted rounded-pill px-2.5 py-1 text-xs">No Prev Data</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex align-items-baseline gap-2 mb-1">
+                        <h2 class="display-6 fw-bold text-slate-900 mb-0">{{ data.current }}</h2>
+                        {% if key == 'wellness_score' or key == 'sleep_hours' %}
+                            <span class="text-muted small fw-medium">{% if key == 'wellness_score' %}%{% else %}hrs{% endif %}</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Previous week average: <strong>{{ data.previous }}</strong>
+                    </p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Personalized Recommendations Card -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="fs-4">🧠</span>
+                    <h3 class="fw-bold h5 mb-0 text-slate-900">Personalized Recommendations</h3>
+                </div>
+                <div class="d-flex flex-column gap-3">
+                    {% for rec in recommendations %}
+                        <div class="p-3 rounded-3 bg-light border-start border-primary border-3">
+                            <p class="mb-0 text-sm text-slate-700 leading-relaxed">{{ rec }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-4 pt-3 border-top text-center">
+                    <p class="text-xs text-muted mb-0">Clinical advice is generated algorithmically based on your logs. If you feel overwhelmed, please reach out to professional support immediately.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Static Charts Preview Card -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold h5 mb-0 text-slate-900">Static Charts Preview (PDF Assets)</h3>
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1 text-xs">Matplotlib Generated</span>
+                </div>
+                
+                <ul class="nav nav-pills nav-fill gap-2 p-1 bg-light rounded-3 mb-3" id="chartPills" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-3 py-2 fw-medium text-sm" id="mood-tab" data-bs-toggle="tab" data-bs-target="#mood-pane" type="button" role="tab">Mood Trend</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-3 py-2 fw-medium text-sm" id="stress-tab" data-bs-toggle="tab" data-bs-target="#stress-pane" type="button" role="tab">Stress Chart</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-3 py-2 fw-medium text-sm" id="sleep-tab" data-bs-toggle="tab" data-bs-target="#sleep-pane" type="button" role="tab">Sleep Duration</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="chartPillsContent">
+                    <div class="tab-pane fade show active" id="mood-pane" role="tabpanel">
+                        <img src="{{ url_for('static', filename='charts/' ~ user_id ~ '/mood_trend.png') }}?t={{ range(1, 1000) | random }}" alt="Mood Trend" class="static-chart-img shadow-sm">
+                    </div>
+                    <div class="tab-pane fade" id="stress-pane" role="tabpanel">
+                        <img src="{{ url_for('static', filename='charts/' ~ user_id ~ '/stress_chart.png') }}?t={{ range(1, 1000) | random }}" alt="Stress Chart" class="static-chart-img shadow-sm">
+                    </div>
+                    <div class="tab-pane fade" id="sleep-pane" role="tabpanel">
+                        <img src="{{ url_for('static', filename='charts/' ~ user_id ~ '/sleep_chart.png') }}?t={{ range(1, 1000) | random }}" alt="Sleep Chart" class="static-chart-img shadow-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Metrics Table Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h3 class="fw-bold h5 mb-3 text-slate-900">Daily Log Details for {{ selected_week_label }}</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th class="text-center">Mood</th>
+                                <th class="text-center">Stress</th>
+                                <th class="text-center">Sleep (Hrs)</th>
+                                <th class="text-center">Sleep Quality</th>
+                                <th class="text-center">Academic Workload</th>
+                                <th class="text-center">Wellness Index</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if logs %}
+                                {% for log in logs %}
+                                    <tr>
+                                        <td><strong>{{ log.log_date.strftime("%A, %b %d") }}</strong></td>
+                                        <td class="text-center"><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5">{{ log.mood_score }}/5</span></td>
+                                        <td class="text-center"><span class="badge bg-{{ 'success' if log.stress_level < 3 else ('warning' if log.stress_level <= 4 else 'danger') }}-subtle text-{{ 'success' if log.stress_level < 3 else ('warning' if log.stress_level <= 4 else 'danger') }} border border-{{ 'success' if log.stress_level < 3 else ('warning' if log.stress_level <= 4 else 'danger') }}-subtle rounded-pill px-2.5">{{ log.stress_level }}/5</span></td>
+                                        <td class="text-center">{{ log.sleep_hours }}</td>
+                                        <td class="text-center">{{ log.sleep_quality }}/5</td>
+                                        <td class="text-center">{{ log.academic_workload }}/5</td>
+                                        <td class="text-center fw-bold text-success">{{ log.wellness_score }}%</td>
+                                        <td class="text-muted small">
+                                            {% if log.notes %}
+                                                {{ log.notes }}
+                                            {% else %}
+                                                <em class="text-slate-400">No notes</em>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        No daily logs recorded for this week.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
