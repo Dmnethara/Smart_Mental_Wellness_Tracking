@@ -527,9 +527,6 @@ def delete_entry(log_id):
 @wellness.route('/dashboard')
 @login_required
 def dashboard():
-    # Generate Matplotlib static charts for this user
-    generate_static_charts(current_user.id)
-    
     # 1. Query last 30 days of wellness logs for the user (ordered ascending for chronological charts)
     thirty_days_ago = datetime.now().date() - timedelta(days=30)
     logs_30d = WellnessLog.query.filter_by(user_id=current_user.id)\

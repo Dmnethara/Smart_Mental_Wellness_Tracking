@@ -31,6 +31,9 @@ class User(db.Model, UserMixin):
 
 class WellnessLog(db.Model):
     __tablename__ = 'wellness_logs'
+    __table_args__ = (
+        db.Index('idx_user_date', 'user_id', 'log_date'),
+    )
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
