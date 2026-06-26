@@ -21,6 +21,7 @@ class User(db.Model, UserMixin):
     role = db.Column(db.Enum('student', 'admin', 'counselor', name='user_roles'), nullable=False, default='student')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    is_flagged = db.Column(db.Boolean, nullable=False, default=False)
     
     # Relationship with wellness logs
     logs = db.relationship('WellnessLog', backref='user', lazy=True, cascade="all, delete-orphan")

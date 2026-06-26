@@ -99,6 +99,11 @@
                         <li class="nav-item">
                             <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'wellness.history' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('wellness.history') }}">History</a>
                         </li>
+                        {% if current_user.role in ('admin', 'counselor') %}
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint.startswith('admin.') %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('admin.dashboard') }}">Admin Panel</a>
+                            </li>
+                        {% endif %}
                     </ul>
                 {% endif %}
                 <ul class="navbar-nav ms-auto align-items-center gap-2 mt-3 mt-lg-0">

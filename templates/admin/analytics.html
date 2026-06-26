@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - System Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-card {
+        border-radius: 16px;
+        border: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 mt-2">
+        <div>
+            <h1 class="fw-extrabold text-slate-900 mb-1">System-Wide Aggregated Analytics</h1>
+            <p class="text-muted mb-0">Longitudinal cohort statistics, stress distributions, and alert frequencies across all registered students</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary rounded-3 text-sm px-3">
+                Dashboard
+            </a>
+            <a href="{{ url_for('admin.students') }}" class="btn btn-outline-primary rounded-3 text-sm px-3">
+                View Students
+            </a>
+        </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Avg Wellness Score over time -->
+        <div class="col-lg-6">
+            <div class="card chart-card shadow-sm p-4 bg-white">
+                <h4 class="fw-bold h6 mb-3 text-slate-700">Average Wellness Index Over Time (Cohort Aggregate)</h4>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="wellnessTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 2: Stress Distribution Histogram -->
+        <div class="col-lg-6">
+            <div class="card chart-card shadow-sm p-4 bg-white">
+                <h4 class="fw-bold h6 mb-3 text-slate-700">Stress Level Frequency Distribution</h4>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="stressDistChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 3: Most Common Risk Alerts Triggered -->
+        <div class="col-lg-6">
+            <div class="card chart-card shadow-sm p-4 bg-white">
+                <h4 class="fw-bold h6 mb-3 text-slate-700">Most Frequently Triggered Risk Alerts</h4>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="alertsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 4: Day-of-Week Stress Average -->
+        <div class="col-lg-6">
+            <div class="card chart-card shadow-sm p-4 bg-white">
+                <h4 class="fw-bold h6 mb-3 text-slate-700">Average Stress Level by Day of the Week</h4>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="weekdayStressChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js Library and Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse data from Flask
+        const wellnessTrend = {{ chart_data.wellness_trend | safe }};
+        const stressDist = {{ chart_data.stress_dist | safe }};
+        const alertsTriggered = {{ chart_data.alerts_triggered | safe }};
+        const weekdayStress = {{ chart_data.weekday_stress | safe }};
+
+        // 1. Wellness Trend Chart (Line)
+        new Chart(document.getElementById('wellnessTrendChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: wellnessTrend.labels,
+                datasets: [{
+                    label: 'Cohort Wellness Index Average',
+                    data: wellnessTrend.data,
+                    borderColor: '#0d9488',
+                    backgroundColor: 'rgba(13, 148, 136, 0.05)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.25,
+                    pointBackgroundColor: '#0d9488'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { min: 0, max: 100, grid: { borderDash: [5, 5] } }
+                }
+            }
+        });
+
+        // 2. Stress Distribution Chart (Bar)
+        new Chart(document.getElementById('stressDistChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: stressDist.labels,
+                datasets: [{
+                    label: 'Log Entry Count',
+                    data: stressDist.data,
+                    backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                    borderColor: '#ef4444',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5] } }
+                }
+            }
+        });
+
+        // 3. Alerts Frequency Chart (Bar)
+        new Chart(document.getElementById('alertsChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: alertsTriggered.labels,
+                datasets: [{
+                    label: 'Active Alerts Flagged',
+                    data: alertsTriggered.data,
+                    backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                    borderColor: '#f59e0b',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y', // Horizontal bars
+                scales: {
+                    x: { beginAtZero: true, grid: { borderDash: [5, 5] } }
+                }
+            }
+        });
+
+        // 4. Weekday Stress Chart (Bar/Heatmap representation)
+        new Chart(document.getElementById('weekdayStressChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: weekdayStress.labels,
+                datasets: [{
+                    label: 'Average Stress (1-5)',
+                    data: weekdayStress.data,
+                    backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                    borderColor: '#4f46e5',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { min: 0, max: 5, grid: { borderDash: [5, 5] } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

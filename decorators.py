@@ -23,8 +23,8 @@ def role_required(*roles):
     return decorator
 
 def admin_required(f):
-    """Decorator to restrict access to admin users only."""
-    return role_required('admin')(f)
+    """Decorator to restrict access to admin and counselor users."""
+    return role_required('admin', 'counselor')(f)
 
 def counselor_required(f):
     """Decorator to restrict access to counselor users only."""

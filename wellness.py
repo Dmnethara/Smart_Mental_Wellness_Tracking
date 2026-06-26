@@ -829,3 +829,366 @@ def report():
         recommendations=recommendations,
         user_id=current_user.id
     )
+
+@wellness.route('/export/pdf')
+@login_required
+def export_pdf():
+    # 1. Security check: only allow current_user to download their own report, or admin/counselor
+    user_id_param = request.args.get('user_id')
+    if user_id_param:
+        try:
+            target_user_id = int(user_id_param)
+        except (ValueError, TypeError):
+            abort(400)
+            
+        if current_user.id != target_user_id and current_user.role not in ('admin', 'counselor'):
+            abort(403)
+        user = User.query.get_or_404(target_user_id)
+    else:
+        user = current_user
+        
+    # 2. Get period parameters (week or month)
+    week_param = request.args.get('week')
+    month_param = request.args.get('month')
+    
+    import datetime
+    today_date = datetime.date.today()
+    
+    if week_param:
+        try:
+            year_str, week_str = week_param.split('-W')
+            year = int(year_str)
+            week = int(week_str)
+            start_date = datetime.date.fromisocalendar(year, week, 1)
+            end_date = datetime.date.fromisocalendar(year, week, 7)
+            report_period_str = f"Week {week} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d')}, {year})"
+        except Exception:
+            abort(400)
+    elif month_param:
+        try:
+            year_str, month_str = month_param.split('-')
+            year = int(year_str)
+            month = int(month_str)
+            start_date = datetime.date(year, month, 1)
+            next_month = month + 1 if month < 12 else 1
+            next_year = year if month < 12 else year + 1
+            end_date = datetime.date(next_year, next_month, 1) - datetime.timedelta(days=1)
+            report_period_str = start_date.strftime("%B %Y")
+        except Exception:
+            abort(400)
+    else:
+        # Default to current week
+        year, week, day = today_date.isocalendar()
+        start_date = datetime.date.fromisocalendar(year, week, 1)
+        end_date = datetime.date.fromisocalendar(year, week, 7)
+        report_period_str = f"Week {week} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d')}, {year})"
+
+    # 3. Query logs in range
+    logs = WellnessLog.query.filter_by(user_id=user.id)\
+                            .filter(WellnessLog.log_date >= start_date, WellnessLog.log_date <= end_date)\
+                            .order_by(WellnessLog.log_date.asc())\
+                            .all()
+                            
+    # Ensure charts are generated
+    generate_static_charts(user.id)
+    
+    # 4. ReportLab Imports
+    import io
+    from flask import send_file
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    
+    pdf_buffer = io.BytesIO()
+    
+    # 0.5 inch margin = 36 points
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=A4,
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+    
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    # Primary navy, secondary teal
+    navy_color = colors.HexColor('#1e3a8a')
+    teal_color = colors.HexColor('#0d9488')
+    slate_dark = colors.HexColor('#1e293b')
+    
+    # Modify default body text
+    styles['Normal'].textColor = slate_dark
+    styles['Normal'].fontSize = 10
+    styles['Normal'].leading = 14
+    
+    title_style = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=18,
+        leading=22,
+        textColor=navy_color,
+        spaceAfter=12
+    )
+    
+    section_heading = ParagraphStyle(
+        'SectionHeading',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=14,
+        leading=18,
+        textColor=navy_color,
+        spaceBefore=12,
+        spaceAfter=8
+    )
+    
+    header_title_style = ParagraphStyle(
+        'HeaderTitle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=14,
+        leading=18,
+        textColor=colors.white,
+        alignment=1 # Center
+    )
+    
+    header_subtitle_style = ParagraphStyle(
+        'HeaderSubtitle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#93c5fd'),
+        alignment=1 # Center
+    )
+    
+    header_desc_style = ParagraphStyle(
+        'HeaderDesc',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=11,
+        leading=15,
+        textColor=colors.white,
+        alignment=1 # Center
+    )
+    
+    story = []
+    
+    # ================= PAGE 1 =================
+    # University Style Header Banner
+    header_html = [
+        [Paragraph("SABARAGAMUWA UNIVERSITY OF SRI LANKA", header_title_style)],
+        [Paragraph("Department of Computing and Information Systems", header_subtitle_style)],
+        [Paragraph("Smart Student Mental Wellness Tracking System", header_desc_style)]
+    ]
+    header_table = Table(header_html, colWidths=[523])
+    header_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), navy_color),
+        ('PADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (0,0), 14),
+        ('BOTTOMPADDING', (0,2), (0,2), 14),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    story.append(header_table)
+    story.append(Spacer(1, 15))
+    
+    # Document Title
+    story.append(Paragraph("STUDENT WELLNESS REPORT", title_style))
+    
+    # Student details table
+    details_data = [
+        [Paragraph("<b>Student Name:</b>", styles['Normal']), Paragraph(user.name, styles['Normal']),
+         Paragraph("<b>Registration No:</b>", styles['Normal']), Paragraph(user.reg_number, styles['Normal'])],
+        [Paragraph("<b>Account Role:</b>", styles['Normal']), Paragraph(user.role.capitalize(), styles['Normal']),
+         Paragraph("<b>Report Period:</b>", styles['Normal']), Paragraph(report_period_str, styles['Normal'])],
+        [Paragraph("<b>Generated On:</b>", styles['Normal']), Paragraph(datetime.datetime.now().strftime("%B %d, %Y %H:%M"), styles['Normal']),
+         Paragraph("", styles['Normal']), Paragraph("", styles['Normal'])]
+    ]
+    details_table = Table(details_data, colWidths=[100, 160, 110, 153])
+    details_table.setStyle(TableStyle([
+        ('PADDING', (0,0), (-1,-1), 5),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LINEBELOW', (0,2), (-1,2), 1, colors.HexColor('#cbd5e1')),
+    ]))
+    story.append(details_table)
+    story.append(Spacer(1, 20))
+    
+    # Summary Statistics heading
+    story.append(Paragraph("Wellness Period Summary", section_heading))
+    
+    # Compute summary statistics
+    if logs:
+        avg_wellness = sum(float(l.wellness_score) for l in logs) / len(logs)
+        avg_mood = sum(int(l.mood_score) for l in logs) / len(logs)
+        avg_stress = sum(int(l.stress_level) for l in logs) / len(logs)
+        avg_sleep = sum(float(l.sleep_hours) for l in logs) / len(logs)
+    else:
+        avg_wellness = avg_mood = avg_stress = avg_sleep = 0.0
+        
+    # Build 2x2 grid of stat boxes
+    stat_data = [
+        [
+            Paragraph("<font size=10 color='#64748b'><b>Average Wellness Index</b></font><br/><font size=22 color='#0d9488'><b>{:.1f}%</b></font>".format(avg_wellness), styles['Normal']),
+            Paragraph("<font size=10 color='#64748b'><b>Average Mood Rating</b></font><br/><font size=22 color='#3b82f6'><b>{:.1f}/5</b></font>".format(avg_mood), styles['Normal'])
+        ],
+        [
+            Paragraph("<font size=10 color='#64748b'><b>Average Stress Level</b></font><br/><font size=22 color='#ef4444'><b>{:.1f}/5</b></font>".format(avg_stress), styles['Normal']),
+            Paragraph("<font size=10 color='#64748b'><b>Average Sleep Duration</b></font><br/><font size=22 color='#6366f1'><b>{:.1f} hrs</b></font>".format(avg_sleep), styles['Normal'])
+        ]
+    ]
+    stat_table = Table(stat_data, colWidths=[255, 255], rowHeights=[75, 75])
+    stat_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+        ('BOX', (0,0), (0,0), 1, colors.HexColor('#e2e8f0')),
+        ('BOX', (1,0), (1,0), 1, colors.HexColor('#e2e8f0')),
+        ('BOX', (0,1), (0,1), 1, colors.HexColor('#e2e8f0')),
+        ('BOX', (1,1), (1,1), 1, colors.HexColor('#e2e8f0')),
+        ('PADDING', (0,0), (-1,-1), 15),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    story.append(stat_table)
+    
+    # Add a brief clinical summary note
+    story.append(Spacer(1, 25))
+    story.append(Paragraph("<b>Clinical Notes & Interpretation:</b>", styles['Normal']))
+    
+    # Find active alerts for Page 1 footer
+    alerts = run_risk_engine(user.id, check_date=end_date)
+    if alerts:
+        alert_desc = "The clinical risk engine has flagged the following alerts: " + ", ".join([a['title'] for a in alerts]) + ". Please refer to the online dashboard for personalized counselor-backed self-care recommendations."
+    else:
+        alert_desc = "Overall mental wellness metrics are stable and within healthy baseline ranges for this period. Continue logging daily to build emotional self-awareness and track ongoing trends."
+        
+    story.append(Paragraph(alert_desc, styles['Normal']))
+    
+    # Page 1 Footer branding
+    story.append(Spacer(1, 40))
+    story.append(Paragraph("<font size=8 color='#94a3b8'>This document is generated by the Smart Mental Wellness Tracking System under the Faculty of Applied Sciences, Sabaragamuwa University of Sri Lanka. Confidentiality is preserved. © 2026 SUSL.</font>", styles['Normal']))
+    
+    story.append(PageBreak())
+    
+    # ================= PAGE 2 =================
+    story.append(Paragraph("Wellness Analytics & Visual Trends", title_style))
+    story.append(Paragraph("Detailed longitudinal analysis of your recorded wellness parameters across mood, stress, and sleep duration.", styles['Normal']))
+    story.append(Spacer(1, 15))
+    
+    # Chart image paths
+    charts_dir = os.path.join(current_app.root_path, 'static', 'charts', str(user.id))
+    mood_img = os.path.join(charts_dir, 'mood_trend.png')
+    stress_img = os.path.join(charts_dir, 'stress_chart.png')
+    sleep_img = os.path.join(charts_dir, 'sleep_chart.png')
+    
+    # Flowable chart inclusions
+    for img_path, img_label in [(mood_img, "Mood Trend Chart"), (stress_img, "Stress Levels Chart"), (sleep_img, "Sleep Analysis Chart")]:
+        if os.path.exists(img_path):
+            try:
+                story.append(Image(img_path, width=440, height=190))
+                story.append(Spacer(1, 10))
+            except Exception:
+                story.append(Paragraph(f"[Error rendering {img_label}]", styles['Normal']))
+                story.append(Spacer(1, 15))
+        else:
+            story.append(Paragraph(f"[{img_label} not available for this period]", styles['Normal']))
+            story.append(Spacer(1, 15))
+            
+    story.append(PageBreak())
+    
+    # ================= PAGE 3 =================
+    story.append(Paragraph("Daily Metrics Breakdown", title_style))
+    story.append(Paragraph(f"Chronological listing of all recorded self-care indicators for the period of <b>{report_period_str}</b>.", styles['Normal']))
+    story.append(Spacer(1, 15))
+    
+    # Table header
+    table_data = [[
+        Paragraph("<b>Date</b>", ParagraphStyle('WH', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white)),
+        Paragraph("<b>Mood</b>", ParagraphStyle('WH', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+        Paragraph("<b>Stress</b>", ParagraphStyle('WH', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+        Paragraph("<b>Sleep (Hrs)</b>", ParagraphStyle('WH', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+        Paragraph("<b>Sleep Quality</b>", ParagraphStyle('WH', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+        Paragraph("<b>Workload</b>", ParagraphStyle('WH', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white, alignment=1)),
+        Paragraph("<b>Wellness Index</b>", ParagraphStyle('WH', parent=styles['Normal'], fontName='Helvetica-Bold', textColor=colors.white, alignment=1))
+    ]]
+    
+    # Style helper for table cell text
+    cell_center = ParagraphStyle('CC', parent=styles['Normal'], alignment=1)
+    
+    for log in logs:
+        score_val = float(log.wellness_score)
+        if score_val >= 70.0:
+            score_color = '#10b981'  # Green
+        elif score_val >= 50.0:
+            score_color = '#f59e0b'  # Amber
+        else:
+            score_color = '#ef4444'  # Red
+            
+        score_p = Paragraph(f"<font color='{score_color}'><b>{score_val:.1f}%</b></font>", cell_center)
+        
+        table_data.append([
+            Paragraph(log.log_date.strftime("%a, %b %d"), styles['Normal']),
+            Paragraph(f"{log.mood_score}/5", cell_center),
+            Paragraph(f"{log.stress_level}/5", cell_center),
+            Paragraph(f"{log.sleep_hours:.1f}", cell_center),
+            Paragraph(f"{log.sleep_quality}/5", cell_center),
+            Paragraph(f"{log.academic_workload}/5", cell_center),
+            score_p
+        ])
+        
+    if not logs:
+        # Placeholder row if empty
+        table_data.append([
+            Paragraph("No logs recorded in this date range.", styles['Normal']),
+            "", "", "", "", "", ""
+        ])
+        
+    metrics_table = Table(
+        table_data, 
+        colWidths=[95, 55, 55, 65, 65, 90, 98]
+    )
+    
+    # Build TableStyle
+    t_style = [
+        ('BACKGROUND', (0,0), (-1,0), navy_color),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('PADDING', (0,0), (-1,-1), 7),
+        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+    ]
+    
+    # Add zebra striping for data rows
+    for r in range(1, len(table_data)):
+        bg_color = colors.HexColor('#f8fafc') if r % 2 == 0 else colors.white
+        t_style.append(('BACKGROUND', (0, r), (-1, r), bg_color))
+        
+    metrics_table.setStyle(TableStyle(t_style))
+    story.append(metrics_table)
+    
+    # Notes Section at the bottom of Page 3
+    story.append(Spacer(1, 25))
+    story.append(Paragraph("<b>Log Notes & Context:</b>", styles['Normal']))
+    
+    has_notes = False
+    for log in logs:
+        if log.notes:
+            has_notes = True
+            story.append(Paragraph(f"• <b>{log.log_date.strftime('%b %d')}</b>: {log.notes}", styles['Normal']))
+            story.append(Spacer(1, 4))
+            
+    if not has_notes:
+        story.append(Paragraph("<font color='#94a3b8'>No qualitative notes were recorded during this period.</font>", styles['Normal']))
+        
+    # Build the document
+    doc.build(story)
+    
+    pdf_buffer.seek(0)
+    
+    date_str = end_date.strftime("%Y%m%d")
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"wellness_{user.reg_number}_{date_str}.pdf",
+        mimetype='application/pdf'
+    )

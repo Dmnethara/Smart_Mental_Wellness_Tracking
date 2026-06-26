@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Clinical Alerts{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alert-card {
+        border-radius: 16px;
+        border: none;
+    }
+    .badge-danger-alert {
+        background-color: #fca5a5 !important;
+        color: #7f1d1d !important;
+        border: 1px solid #f87171;
+    }
+    .badge-warning-alert {
+        background-color: #fde047 !important;
+        color: #713f12 !important;
+        border: 1px solid #eab308;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 mt-2">
+        <div>
+            <h1 class="fw-extrabold text-slate-900 mb-1">Active Clinical Risk Alerts</h1>
+            <p class="text-muted mb-0">Cohort alerts currently triggered by the rule-based risk engine (Chronic Stress / Sleep Deprivation / Wellness Decline / No Engagement)</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary rounded-3 text-sm px-3">
+                Dashboard
+            </a>
+            <a href="{{ url_for('admin.students') }}" class="btn btn-outline-primary rounded-3 text-sm px-3">
+                View Students
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerts Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-2">
+        <div class="table-responsive" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+            <table class="table align-middle mb-0 text-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-3 px-4">Student</th>
+                        <th class="py-3">Registration No</th>
+                        <th class="py-3">Triggered Alert</th>
+                        <th class="py-3">Severity</th>
+                        <th class="py-3">Triggered Date (Last Log)</th>
+                        <th class="py-3 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if alerts %}
+                        {% for alert in alerts %}
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="{{ url_for('admin.student_detail', student_id=alert.student.id) }}" class="fw-bold text-slate-900 text-decoration-none">
+                                            {{ alert.student.name }}
+                                        </a>
+                                        {% if alert.student.is_flagged %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.7rem;">
+                                                🚩 Flagged
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-xs text-muted d-block">{{ alert.student.email }}</span>
+                                </td>
+                                <td><code>{{ alert.student.reg_number }}</code></td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <span class="fs-5">
+                                            {% if alert.icon == 'moon' %}🌙
+                                            {% elif alert.icon == 'exclamation-triangle' %}⚠️
+                                            {% elif alert.icon == 'graph-down' %}📉
+                                            {% else %}📅
+                                            {% endif %}
+                                        </span>
+                                        <div>
+                                            <span class="fw-bold text-slate-800 d-block">{{ alert.title }}</span>
+                                            <span class="text-xs text-slate-500">{{ alert.description }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if alert.level == 'danger' %}
+                                        <span class="badge badge-danger-alert rounded-pill px-2.5 py-1 text-xs">🔴 High Risk</span>
+                                    {% else %}
+                                        <span class="badge badge-warning-alert rounded-pill px-2.5 py-1 text-xs">🟡 Warning</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ alert.date_triggered }}</td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('admin.student_detail', student_id=alert.student.id) }}" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 text-xs fw-semibold">
+                                        Take Action
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <span class="fs-1 d-block mb-2">🛡️</span>
+                                No clinical alerts triggered in the system. All students are stable.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

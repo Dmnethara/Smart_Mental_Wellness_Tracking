@@ -30,6 +30,9 @@ def create_app(config_class=Config):
     from wellness import wellness as wellness_blueprint
     app.register_blueprint(wellness_blueprint)
     
+    from admin import admin as admin_blueprint
+    app.register_blueprint(admin_blueprint)
+    
     # Home landing page route
     @app.route('/')
     def home():

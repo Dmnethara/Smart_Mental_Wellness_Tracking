@@ -51,6 +51,53 @@
         </div>
     </div>
 
+    <!-- PDF Export Control Panel -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-2.5">
+                <span class="fs-4">📄</span>
+                <div>
+                    <h5 class="fw-bold mb-0 text-slate-900">Downloadable Wellness Report</h5>
+                    <p class="text-muted mb-0 small text-slate-500">Export a professional PDF copy of your clinical mental health metrics</p>
+                </div>
+            </div>
+            <div>
+                <form method="GET" action="{{ url_for('wellness.export_pdf') }}" class="d-flex flex-wrap align-items-center gap-2">
+                    {% if user_id %}
+                        <!-- For Counselor/Admin downloading student reports -->
+                        <input type="hidden" name="user_id" value="{{ user_id }}">
+                    {% endif %}
+                    <div class="d-flex align-items-center gap-2">
+                        <select name="export_type" id="export_type" class="form-select rounded-3 shadow-sm text-sm" onchange="toggleExportInputs()">
+                            <option value="week">By Week</option>
+                            <option value="month">By Month</option>
+                        </select>
+                    </div>
+                    
+                    <div id="export_week_container" class="d-flex align-items-center gap-2">
+                        <select name="week" class="form-select rounded-3 shadow-sm text-sm">
+                            {% for w in weeks %}
+                                <option value="{{ w.key }}" {% if w.key == selected_week %}selected{% endif %}>{{ w.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div id="export_month_container" class="d-flex align-items-center gap-2 d-none">
+                        <input type="month" name="month" class="form-control rounded-3 shadow-sm text-sm" value="{{ selected_week[:7] }}">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary d-flex align-items-center gap-2 text-sm px-3 py-2 rounded-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-pdf-fill" viewBox="0 0 16 16">
+                            <path d="M5.523 12.424c.14-.082.293-.162.459-.238a7.878 7.878 0 0 1-.45.606c-.28.33-.52.496-.705.496-.094 0-.177-.04-.25-.119a.694.694 0 0 1-.161-.414c0-.244.19-.54.557-.931H5.523zm3.194-4.864a10.991 10.991 0 0 0-1.84 2.871c.775-.067 1.399-.117 1.937-.117.302 0 .504.047.61.162.112.114.147.279.088.467a.493.493 0 0 1-.453.346c-.297 0-.662-.128-1.096-.381-.433-.253-.881-.623-1.344-1.111a10.4 10.4 0 0 1-1.34-2.367c.196-.587.358-1.176.485-1.767.042-.196.082-.472.121-.83a6.29 6.29 0 0 0-.116-2.072c.017-.082.043-.16.078-.228a.455.455 0 0 1 .593-.191c.079.041.137.104.168.18.171.433.258.918.258 1.455a14.11 14.11 0 0 1-.228 1.958c.232.574.528 1.14.89 1.687zm-1.87 2.18c.205-.425.424-.87.657-1.332a10.15 10.15 0 0 0-.657 1.332zM12.28 2H8.25a.25.25 0 0 0-.25.25v5.5a.25.25 0 0 0 .25.25h5.5a.25.25 0 0 0 .25-.25V4.707A1 1 0 0 0 13.707 4L12 2.293A1 1 0 0 0 11.293 2z"/>
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                        </svg>
+                        <span>Download PDF Report</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Active Alerts Notification Board -->
     {% if active_alerts %}
         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white border-start border-danger border-4">
@@ -219,4 +266,30 @@
     </div>
 
 </div>
+
+<script>
+    function toggleExportInputs() {
+        const type = document.getElementById('export_type').value;
+        const weekContainer = document.getElementById('export_week_container');
+        const monthContainer = document.getElementById('export_month_container');
+        
+        if (type === 'week') {
+            weekContainer.classList.remove('d-none');
+            weekContainer.querySelector('select').disabled = false;
+            monthContainer.classList.add('d-none');
+            monthContainer.querySelector('input').disabled = true;
+        } else {
+            weekContainer.classList.add('d-none');
+            weekContainer.querySelector('select').disabled = true;
+            monthContainer.classList.remove('d-none');
+            monthContainer.querySelector('input').disabled = false;
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const exportType = document.getElementById('export_type');
+        if (exportType) {
+            toggleExportInputs();
+        }
+    });
+</script>
 {% endblock %}

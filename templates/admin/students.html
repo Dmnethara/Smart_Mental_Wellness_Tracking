@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Student Registry{% endblock %}
+
+{% block extra_css %}
+<style>
+    .row-at-risk {
+        background-color: rgba(239, 68, 68, 0.04) !important;
+        transition: background-color 0.2s ease;
+    }
+    .row-at-risk:hover {
+        background-color: rgba(239, 68, 68, 0.08) !important;
+    }
+    
+    .row-watch {
+        background-color: rgba(245, 158, 11, 0.03) !important;
+        transition: background-color 0.2s ease;
+    }
+    .row-watch:hover {
+        background-color: rgba(245, 158, 11, 0.07) !important;
+    }
+    
+    .row-healthy {
+        background-color: rgba(16, 185, 129, 0.01) !important;
+        transition: background-color 0.2s ease;
+    }
+    .row-healthy:hover {
+        background-color: rgba(16, 185, 129, 0.04) !important;
+    }
+    
+    .search-input {
+        border-radius: 8px;
+    }
+    
+    .table-container {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .flag-badge {
+        font-size: 0.75rem;
+        padding: 0.25em 0.5em;
+        font-weight: 600;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 mt-2">
+        <div>
+            <h1 class="fw-extrabold text-slate-900 mb-1">Student Wellness Registry</h1>
+            <p class="text-muted mb-0">Total students monitored: <strong>{{ students|length }}</strong>. Rows sorted by clinical risk priority.</p>
+        </div>
+        <div>
+            <input type="text" id="studentSearch" class="form-control search-input rounded-3 shadow-sm text-sm" placeholder="🔍 Search by name or reg no...">
+        </div>
+    </div>
+
+    <!-- Student Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-2">
+        <div class="table-responsive table-container">
+            <table class="table align-middle mb-0 text-sm" id="studentTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-3 px-4">Name</th>
+                        <th class="py-3">Reg No</th>
+                        <th class="py-3 text-center">Total Logs</th>
+                        <th class="py-3 text-center">Last Log Date</th>
+                        <th class="py-3 text-center">7-Day Stress</th>
+                        <th class="py-3 text-center">30-Day Wellness</th>
+                        <th class="py-3 text-center">Risk Status</th>
+                        <th class="py-3 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if students %}
+                        {% for item in students %}
+                            {% set row_class = 'row-at-risk' if item.risk_status == 'at-risk' else ('row-watch' if item.risk_status == 'watch' else 'row-healthy') %}
+                            <tr class="{{ row_class }}" data-flagged="{{ item.is_flagged | lower }}">
+                                <td class="px-4 py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="{{ url_for('admin.student_detail', student_id=item.student.id) }}" class="fw-bold text-slate-900 text-decoration-none hover-underline">
+                                            {{ item.student.name }}
+                                        </a>
+                                        {% if item.is_flagged %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle flag-badge">
+                                                🚩 Flagged
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-xs text-muted d-block">{{ item.student.email }}</span>
+                                </td>
+                                <td><code>{{ item.student.reg_number }}</code></td>
+                                <td class="text-center fw-medium">{{ item.total_logs }}</td>
+                                <td class="text-center text-muted">{{ item.last_log_date }}</td>
+                                <td class="text-center">
+                                    {% if item.avg_stress_7d == 'N/A' %}
+                                        <span class="text-muted">N/A</span>
+                                    {% else %}
+                                        <span class="fw-bold text-{{ 'success' if item.avg_stress_7d < 2.5 else ('warning' if item.avg_stress_7d < 3.5 else 'danger') }}">
+                                            {{ item.avg_stress_7d }}/5
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center fw-bold">
+                                    {% if item.total_logs > 0 %}
+                                        <span class="text-{{ 'success' if item.avg_wellness_30d >= 70.0 else ('warning' if item.avg_wellness_30d >= 50.0 else 'danger') }}">
+                                            {{ item.avg_wellness_30d }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.risk_status == 'at-risk' %}
+                                        <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 text-xs">⚠️ At Risk</span>
+                                    {% elif item.risk_status == 'watch' %}
+                                        <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 text-xs">🔍 Watch</span>
+                                    {% else %}
+                                        <span class="badge bg-success text-white rounded-pill px-2.5 py-1 text-xs">✓ Healthy</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('admin.student_detail', student_id=item.student.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 text-xs fw-semibold">
+                                        Review dashboard
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <span class="fs-1 d-block mb-2">👤</span>
+                                No students registered in the database yet.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Front-end search and filter script
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('studentSearch');
+        const table = document.getElementById('studentTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        // Handle search query
+        searchInput.addEventListener('keyup', function() {
+            const query = searchInput.value.toLowerCase().strip ? searchInput.value.toLowerCase().trim() : searchInput.value.toLowerCase();
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                if (cells.length < 2) continue;
+                
+                const name = cells[0].textContent.toLowerCase();
+                const regNo = cells[1].textContent.toLowerCase();
+                
+                if (name.includes(query) || regNo.includes(query)) {
+                    rows[i].style.display = '';
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        });
+        
+        // Handle filter for flagged students via query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const flaggedOnly = urlParams.get('flagged');
+        if (flaggedOnly === 'true') {
+            for (let i = 0; i < rows.length; i++) {
+                const isFlagged = rows[i].getAttribute('data-flagged') === 'true';
+                if (!isFlagged) {
+                    rows[i].style.display = 'none';
+                }
+            }
+            searchInput.placeholder = "🔍 Search flagged students only...";
+        }
+    });
+</script>
+{% endblock %}

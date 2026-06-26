@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Counselor View - {{ student.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 16px;
+        border: none;
+    }
+    .metric-trend {
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 0.25em 0.5em;
+        border-radius: 6px;
+    }
+    .static-chart-img {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+    .flag-banner {
+        border-radius: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    
+    <!-- Counselor Banner & Flag Status -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 {% if student.is_flagged %}bg-danger bg-opacity-10 border border-danger border-2{% else %}bg-white{% endif %} flag-banner">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <span class="fs-1">{% if student.is_flagged %}🚩{% else %}👤{% endif %}</span>
+                <div>
+                    <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2 py-0.5 text-xs">Student Profile</span>
+                    <h2 class="fw-extrabold text-slate-900 mb-1">{{ student.name }}</h2>
+                    <p class="text-muted mb-0 small">
+                        Reg No: <strong>{{ student.reg_number }}</strong> | Email: <strong>{{ student.email }}</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <!-- Flag / Unflag POST Form -->
+                <form method="POST" action="{{ url_for('admin.flag_student', student_id=student.id) }}">
+                    <!-- Include CSRF token as Flask-WTF CSRFProtect is enabled -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn {% if student.is_flagged %}btn-outline-danger{% else %}btn-danger{% endif %} btn-action d-flex align-items-center gap-2 rounded-3 px-3 py-2 text-sm">
+                        <span>{% if student.is_flagged %}🏳️ Remove Counseling Flag{% else %}🚩 Flag for Counseling{% endif %}</span>
+                    </button>
+                </form>
+                <!-- PDF Download Button for Counselor -->
+                <a href="{{ url_for('wellness.export_pdf', user_id=student.id) }}" class="btn btn-primary btn-action d-flex align-items-center gap-2 rounded-3 px-3 py-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-pdf-fill" viewBox="0 0 16 16">
+                        <path d="M5.523 12.424c.14-.082.293-.162.459-.238a7.878 7.878 0 0 1-.45.606c-.28.33-.52.496-.705.496-.094 0-.177-.04-.25-.119a.694.694 0 0 1-.161-.414c0-.244.19-.54.557-.931H5.523zm3.194-4.864a10.991 10.991 0 0 0-1.84 2.871c.775-.067 1.399-.117 1.937-.117.302 0 .504.047.61.162.112.114.147.279.088.467a.493.493 0 0 1-.453.346c-.297 0-.662-.128-1.096-.381-.433-.253-.881-.623-1.344-1.111a10.4 10.4 0 0 1-1.34-2.367c.196-.587.358-1.176.485-1.767.042-.196.082-.472.121-.83a6.29 6.29 0 0 0-.116-2.072c.017-.082.043-.16.078-.228a.455.455 0 0 1 .593-.191c.079.041.137.104.168.18.171.433.258.918.258 1.455a14.11 14.11 0 0 1-.228 1.958c.232.574.528 1.14.89 1.687zm-1.87 2.18c.205-.425.424-.87.657-1.332a10.15 10.15 0 0 0-.657 1.332zM12.28 2H8.25a.25.25 0 0 0-.25.25v5.5a.25.25 0 0 0 .25.25h5.5a.25.25 0 0 0 .25-.25V4.707A1 1 0 0 0 13.707 4L12 2.293A1 1 0 0 0 11.293 2z"/>
+                        <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                    </svg>
+                    <span>Download PDF Report</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Alerts Board -->
+    {% if active_alerts %}
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white border-start border-danger border-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="fs-4">⚠️</span>
+                <h3 class="fw-bold h5 mb-0 text-slate-900">Active Risk Engine Warnings</h3>
+            </div>
+            <div class="d-flex flex-column gap-2.5">
+                {% for alert in active_alerts %}
+                    <div class="alert alert-{{ alert.level }} border-0 shadow-none rounded-3 m-0 p-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="fs-5">🚨</span>
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ alert.title }}</h6>
+                                <p class="mb-0 small fw-medium text-dark">{{ alert.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- 30-Day Metrics Summary Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Avg Mood -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card stat-card h-100 p-4 shadow-sm bg-white">
+                <span class="text-secondary fw-semibold small uppercase text-slate-500">Avg Mood This Week</span>
+                <h2 class="display-6 fw-bold text-slate-900 mt-2 mb-1">{{ avg_mood }}</h2>
+                <p class="text-muted small mb-0">Based on last 7 days of logs</p>
+            </div>
+        </div>
+        
+        <!-- Avg Stress -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card stat-card h-100 p-4 shadow-sm bg-white">
+                <span class="text-secondary fw-semibold small uppercase text-slate-500">Avg Stress This Week</span>
+                <h2 class="display-6 fw-bold {{ stress_class }} mt-2 mb-1">{{ avg_stress }}</h2>
+                <p class="text-muted small mb-0">Scale: 1 (Low) to 5 (High)</p>
+            </div>
+        </div>
+        
+        <!-- Streak -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card stat-card h-100 p-4 shadow-sm bg-white">
+                <span class="text-secondary fw-semibold small uppercase text-slate-500">Logging Streak</span>
+                <h2 class="display-6 fw-bold text-slate-900 mt-2 mb-1">{{ streak }} days</h2>
+                <p class="text-muted small mb-0">Consecutive logging streak</p>
+            </div>
+        </div>
+        
+        <!-- Overall Wellness -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card stat-card h-100 p-4 shadow-sm bg-white">
+                <span class="text-secondary fw-semibold small uppercase text-slate-500">30-Day Wellness Index</span>
+                <h2 class="display-6 fw-bold text-primary mt-2 mb-1">{{ avg_wellness }}%</h2>
+                <p class="text-muted small mb-0">Rolling 30-day average index</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Charts (Chart.js) -->
+    <div class="row g-4 mb-4">
+        <!-- Wellness Index Trend -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h3 class="fw-bold h5 mb-3 text-slate-900">30-Day Wellness Score Trend</h3>
+                <canvas id="wellnessChart" style="height: 300px; width: 100%;"></canvas>
+            </div>
+        </div>
+        
+        <!-- Clinical Analytics & Statistics -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h3 class="fw-bold h5 mb-3 text-slate-900">Clinical Correlations</h3>
+                <div class="d-flex flex-column gap-3">
+                    <div class="p-3 rounded-3 bg-light">
+                        <span class="text-xs text-secondary d-block uppercase font-semibold">Sleep & Stress Correlation</span>
+                        <p class="mb-0 fw-medium text-sm text-slate-700">{{ correlation_msg }}</p>
+                    </div>
+                    <div class="p-3 rounded-3 bg-light">
+                        <span class="text-xs text-secondary d-block uppercase font-semibold">Day of Week Pattern</span>
+                        <p class="mb-0 fw-medium text-sm text-slate-700">{{ weekday_msg }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Static Matplotlib Charts Preview -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h3 class="fw-bold h5 mb-3 text-slate-900">Matplotlib Trend Visualization (PDF Assets)</h3>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <h6 class="fw-bold text-slate-700 small text-center mb-2">Mood Trend</h6>
+                        <img src="{{ url_for('static', filename='charts/' ~ student.id ~ '/mood_trend.png') }}?t={{ range(1, 1000) | random }}" alt="Mood Trend" class="static-chart-img shadow-sm">
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="fw-bold text-slate-700 small text-center mb-2">Stress Levels</h6>
+                        <img src="{{ url_for('static', filename='charts/' ~ student.id ~ '/stress_chart.png') }}?t={{ range(1, 1000) | random }}" alt="Stress Chart" class="static-chart-img shadow-sm">
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="fw-bold text-slate-700 small text-center mb-2">Sleep Duration & Quality</h6>
+                        <img src="{{ url_for('static', filename='charts/' ~ student.id ~ '/sleep_chart.png') }}?t={{ range(1, 1000) | random }}" alt="Sleep Chart" class="static-chart-img shadow-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Log History Table -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h3 class="fw-bold h5 mb-3 text-slate-900">Historical Daily Logs (Read Only)</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th class="text-center">Mood</th>
+                                <th class="text-center">Stress</th>
+                                <th class="text-center">Sleep (Hrs)</th>
+                                <th class="text-center">Sleep Quality</th>
+                                <th class="text-center">Academic Workload</th>
+                                <th class="text-center">Wellness Index</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if logs %}
+                                {% for log in logs %}
+                                    <tr>
+                                        <td><strong>{{ log.log_date.strftime("%a, %b %d, %Y") }}</strong></td>
+                                        <td class="text-center"><span class="badge bg-info-subtle text-info border rounded-pill px-2.5">{{ log.mood_score }}/5</span></td>
+                                        <td class="text-center"><span class="badge bg-{{ 'success' if log.stress_level < 3 else ('warning' if log.stress_level <= 4 else 'danger') }}-subtle text-{{ 'success' if log.stress_level < 3 else ('warning' if log.stress_level <= 4 else 'danger') }} border rounded-pill px-2.5">{{ log.stress_level }}/5</span></td>
+                                        <td class="text-center">{{ log.sleep_hours }}</td>
+                                        <td class="text-center">{{ log.sleep_quality }}/5</td>
+                                        <td class="text-center">{{ log.academic_workload }}/5</td>
+                                        <td class="text-center fw-bold text-success">{{ log.wellness_score }}%</td>
+                                        <td class="text-muted small">
+                                            {% if log.notes %}
+                                                {{ log.notes }}
+                                            {% else %}
+                                                <em class="text-slate-400">No notes</em>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        No daily logs recorded by this student.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js Libraries and Rendering -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const wellnessData = {{ chart_data.wellness | safe }};
+        
+        const ctxWellness = document.getElementById('wellnessChart').getContext('2d');
+        new Chart(ctxWellness, {
+            type: 'line',
+            data: {
+                labels: wellnessData.labels,
+                datasets: [{
+                    label: 'Wellness Index Score',
+                    data: wellnessData.data,
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#4f46e5'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        grid: { borderDash: [5, 5] }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-card {
+        border-radius: 16px;
+        border: none;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .admin-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .alert-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .btn-action {
+        border-radius: 8px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 mt-2">
+        <div>
+            <h1 class="fw-extrabold text-slate-900 mb-1">Admin & Counselor Dashboard</h1>
+            <p class="text-muted mb-0">System overview, risk tracking, and student mental health metrics</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.students') }}" class="btn btn-outline-primary rounded-3 text-sm px-3">
+                View Students
+            </a>
+            <a href="{{ url_for('admin.analytics') }}" class="btn btn-primary rounded-3 text-sm px-3">
+                System Analytics
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Card 1: Total Students -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card admin-card h-100 p-4 shadow-sm bg-white border-start border-primary border-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-secondary fw-semibold small uppercase text-slate-500">Total Students</span>
+                    <span class="fs-4">👥</span>
+                </div>
+                <h2 class="display-6 fw-bold text-slate-900 mb-1">{{ total_students }}</h2>
+                <p class="text-muted small mb-0">Registered in the system</p>
+            </div>
+        </div>
+
+        <!-- Card 2: Total Logs Week -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card admin-card h-100 p-4 shadow-sm bg-white border-start border-success border-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-secondary fw-semibold small uppercase text-slate-500">Weekly Logs</span>
+                    <span class="fs-4">📝</span>
+                </div>
+                <h2 class="display-6 fw-bold text-slate-900 mb-1">{{ total_logs_week }}</h2>
+                <p class="text-muted small mb-0">Recorded in the last 7 days</p>
+            </div>
+        </div>
+
+        <!-- Card 3: Students At Risk -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card admin-card h-100 p-4 shadow-sm bg-white border-start border-danger border-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-secondary fw-semibold small uppercase text-slate-500">Students At-Risk</span>
+                    <span class="fs-4">⚠️</span>
+                </div>
+                <h2 class="display-6 fw-bold text-danger mb-1">{{ at_risk_count }}</h2>
+                <p class="text-muted small mb-0">Chronic stress alert active</p>
+            </div>
+        </div>
+
+        <!-- Card 4: Avg System Wellness -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card admin-card h-100 p-4 shadow-sm bg-white border-start border-info border-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-secondary fw-semibold small uppercase text-slate-500">Avg Wellness Today</span>
+                    <span class="fs-4">📈</span>
+                </div>
+                <h2 class="display-6 fw-bold text-slate-900 mb-1">{{ avg_wellness_today }}%</h2>
+                <p class="text-muted small mb-0">Daily system aggregate</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Quick Alert List -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">🚨</span>
+                        <h3 class="fw-bold h5 mb-0 text-slate-900">Critical Clinical Alerts</h3>
+                    </div>
+                    <a href="{{ url_for('admin.alerts') }}" class="small fw-semibold text-decoration-none">View All Alerts</a>
+                </div>
+                
+                <div class="d-flex flex-column gap-3">
+                    {% if recent_alerts %}
+                        {% for item in recent_alerts %}
+                            <div class="p-3 rounded-3 bg-light border-start border-{{ 'danger' if item.alert.level == 'danger' else 'warning' }} border-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-slate-900">{{ item.student.name }} <span class="text-muted font-normal text-xs">({{ item.student.reg_number }})</span></h6>
+                                    <p class="mb-0 text-xs text-slate-600"><span class="badge bg-{{ 'danger' if item.alert.level == 'danger' else 'warning' }}-subtle text-{{ 'danger' if item.alert.level == 'danger' else 'warning' }} me-1">{{ item.alert.title }}</span> {{ item.alert.description }}</p>
+                                </div>
+                                <a href="{{ url_for('admin.student_detail', student_id=item.student.id) }}" class="btn btn-sm btn-outline-secondary rounded-pill text-xs px-2.5">
+                                    Review
+                                </a>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <span class="fs-1 d-block mb-2">🎉</span>
+                            No critical alerts triggered in the system.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Action / Counselor Resources -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="fs-4">💡</span>
+                    <h3 class="fw-bold h5 mb-0 text-slate-900">Staff Resources & Actions</h3>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-10 h-100">
+                            <h6 class="fw-bold text-primary mb-2">Student Registry</h6>
+                            <p class="text-xs text-slate-600 mb-3">View the complete student list, sort by risk engine output, and flag students for intervention.</p>
+                            <a href="{{ url_for('admin.students') }}" class="btn btn-sm btn-primary w-100 rounded-2 text-xs py-1.5">Manage Students</a>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-10 h-100">
+                            <h6 class="fw-bold text-success mb-2">System Analytics</h6>
+                            <p class="text-xs text-slate-600 mb-3">Examine system-wide aggregates, stress distributions, alert frequencies, and heatmaps.</p>
+                            <a href="{{ url_for('admin.analytics') }}" class="btn btn-sm btn-success w-100 rounded-2 text-xs py-1.5">View Statistics</a>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-10 h-100">
+                            <h6 class="fw-bold text-danger mb-2">Risk Alerts</h6>
+                            <p class="text-xs text-slate-600 mb-3">Investigate active alerts triggered by the clinical risk engine, classified by alert type.</p>
+                            <a href="{{ url_for('admin.alerts') }}" class="btn btn-sm btn-danger w-100 rounded-2 text-xs py-1.5">Check Risk Board</a>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-10 h-100">
+                            <h6 class="fw-bold text-secondary mb-2">Support Interventions</h6>
+                            <p class="text-xs text-slate-600 mb-3">Check flagged students list, review counselor logs, and contact at-risk individuals directly.</p>
+                            <a href="{{ url_for('admin.students') }}?flagged=true" class="btn btn-sm btn-outline-secondary w-100 rounded-2 text-xs py-1.5">Review Flags</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
