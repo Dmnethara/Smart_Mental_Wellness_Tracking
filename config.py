@@ -13,5 +13,6 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Flask Environment
-    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
-    DEBUG = FLASK_ENV == 'development'
+    FLASK_ENV = os.getenv('FLASK_ENV', 'production')
+    # Default to debug=True only if FLASK_ENV is development and FLASK_DEBUG is not explicitly set to False
+    DEBUG = os.getenv('FLASK_DEBUG', 'True' if FLASK_ENV == 'development' else 'False').lower() in ('true', '1', 'yes')

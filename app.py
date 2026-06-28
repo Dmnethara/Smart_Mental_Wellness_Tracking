@@ -38,6 +38,8 @@ def create_app(config_class=Config):
     def home():
         # Redirect to dashboard if logged in, otherwise show landing page
         if current_user.is_authenticated:
+            if current_user.role in ['admin', 'counselor']:
+                return redirect(url_for('admin.dashboard'))
             return redirect(url_for('wellness.dashboard'))
         return render_template('index.html')
         
@@ -50,4 +52,4 @@ def create_app(config_class=Config):
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=app.config['DEBUG'])

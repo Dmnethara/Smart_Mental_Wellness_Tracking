@@ -90,18 +90,28 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if current_user.is_authenticated %}
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-center gap-2 ps-lg-4">
-                        <li class="nav-item">
-                            <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'wellness.dashboard' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('wellness.dashboard') }}">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'wellness.report' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('wellness.report') }}">Weekly Report</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'wellness.history' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('wellness.history') }}">History</a>
-                        </li>
-                        {% if current_user.role in ('admin', 'counselor') %}
+                        {% if current_user.role == 'student' %}
                             <li class="nav-item">
-                                <a class="nav-link fw-semibold text-sm {% if request.endpoint.startswith('admin.') %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('admin.dashboard') }}">Admin Panel</a>
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'wellness.dashboard' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('wellness.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'wellness.report' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('wellness.report') }}">Weekly Report</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'wellness.history' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('wellness.history') }}">History</a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'admin.dashboard' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'admin.students' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('admin.students') }}">Students</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'admin.analytics' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('admin.analytics') }}">System Analytics</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold text-sm {% if request.endpoint == 'admin.alerts' %}text-primary active{% else %}text-secondary{% endif %}" href="{{ url_for('admin.alerts') }}">Risk Alerts</a>
                             </li>
                         {% endif %}
                     </ul>

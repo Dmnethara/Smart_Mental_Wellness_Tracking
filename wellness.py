@@ -527,6 +527,10 @@ def delete_entry(log_id):
 @wellness.route('/dashboard')
 @login_required
 def dashboard():
+    # Redirect admin/counselor to their dashboard
+    if current_user.role in ['admin', 'counselor']:
+        return redirect(url_for('admin.dashboard'))
+        
     # 1. Query last 30 days of wellness logs for the user (ordered ascending for chronological charts)
     thirty_days_ago = datetime.now().date() - timedelta(days=30)
     logs_30d = WellnessLog.query.filter_by(user_id=current_user.id)\
