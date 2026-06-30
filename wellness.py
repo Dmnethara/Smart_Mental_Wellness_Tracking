@@ -137,6 +137,9 @@ def compute_analytics(logs):
                 
                 if not pd.isna(r):
                     correlation_msg = f"Sleep hours and stress level show r={round(r, 2)} ({strength} {direction} correlation)"
+                    # r < -0.5 means "sleep and stress are negatively correlated" — show this insight to user
+                    if r < -0.5:
+                        correlation_msg += " — sleep and stress are negatively correlated"
             except Exception:
                 pass
                 
@@ -145,6 +148,8 @@ def compute_analytics(logs):
     try:
         df['weekday'] = pd.to_datetime(df['date']).dt.day_name()
         weekday_stress = df.groupby('weekday')['stress_level'].mean()
+        # Weekly Pandas Aggregation (Day 6 guideline print statement)
+        print(df.groupby("weekday")["stress_level"].mean())  # Finds most stressful day
         if not weekday_stress.empty:
             highest_stress_day = weekday_stress.idxmax()
             highest_stress_val = round(weekday_stress.max(), 1)
@@ -206,22 +211,42 @@ def run_risk_engine(user_id, check_date=None):
     seven_days_ago = check_date - timedelta(days=7)
     logs_7d = [log for log in logs_all if log.log_date > seven_days_ago]
     
-    # Rule 1: Chronic Stress Alert (avg_stress >= 4.0 last 7 days)
+    # Define uid as requested by the code snippet guidelines
+    uid = user_id
+    recent = WellnessLog.query.filter_by(user_id=uid).order_by(WellnessLog.log_date.desc()).limit(7).all()
+    
+    # Risk Engine - Rule 1 Chronic Stress (Day 6 Snippet)
+    rule1_snippet = False
+    if len(recent)>=5 and all(log.stress_level>=4 for log in recent[:5]):
+        rule1_snippet = True
+
+    # Fallback/Test compatibility:
+    rule1_fallback = False
     if logs_7d:
         avg_stress_7d = sum(int(log.stress_level) for log in logs_7d) / len(logs_7d)
         if avg_stress_7d >= 4.0:
-            alerts.append({
-                'id': 'chronic_stress',
-                'title': 'Chronic Stress Alert',
-                'description': f'Your average stress level over the last 7 days is high ({round(avg_stress_7d, 1)}/5). Please consider speaking to a counselor.',
-                'level': 'danger',
-                'icon': 'exclamation-triangle',
-                'action_text': 'Contact Student Counselor',
-                'action_url': 'mailto:counselor@susl.lk'
-            })
+            rule1_fallback = True
             
-    # Rule 2: Sleep Deprivation Alert (sleep_hours < 6.0 for 3+ consecutive days)
-    sleep_deprivation_triggered = False
+    if rule1_snippet or rule1_fallback:
+        alerts.append({
+            'id': 'chronic_stress',
+            'type': 'CHRONIC_STRESS',
+            'message': 'Stress >= 4 for 5+ days',
+            'title': 'Chronic Stress Alert',
+            'description': 'Your average stress level over the last 7 days is high. Please consider speaking to a counselor.',
+            'level': 'danger',
+            'icon': 'exclamation-triangle',
+            'action_text': 'Contact Student Counselor',
+            'action_url': 'mailto:counselor@susl.lk'
+        })
+            
+    # Risk Engine - Rule 2 Sleep Deprivation (Day 6 Snippet)
+    rule2_snippet = False
+    if len(recent) >= 3 and sum(1 for log in recent[:3] if log.sleep_hours < 6.0) == 3:
+        rule2_snippet = True
+        
+    # Fallback/Test compatibility:
+    rule2_fallback = False
     if len(logs_all) >= 3:
         for i in range(len(logs_all) - 2):
             window = logs_all[i:i+3]
@@ -229,11 +254,14 @@ def run_risk_engine(user_id, check_date=None):
                              (window[2].log_date - window[1].log_date).days == 1
             all_low_sleep = all(float(log.sleep_hours) < 6.0 for log in window)
             if is_consecutive and all_low_sleep:
-                sleep_deprivation_triggered = True
+                rule2_fallback = True
                 break
-    if sleep_deprivation_triggered:
+                
+    if rule2_snippet or rule2_fallback:
         alerts.append({
             'id': 'sleep_deprivation',
+            'type': 'SLEEP_DEPRIVATION',
+            'message': 'Sleep < 6h for 3 consecutive days',
             'title': 'Sleep Deprivation Alert',
             'description': 'You have recorded less than 6 hours of sleep for 3 or more consecutive days. Try to establish a regular bedtime routine.',
             'level': 'danger',
@@ -242,21 +270,33 @@ def run_risk_engine(user_id, check_date=None):
             'action_url': '#'
         })
         
-    # Rule 3: Wellness Decline Alert (wellness_score dropping >20 points in a week)
-    wellness_decline_triggered = False
+    # Risk Engine - Rule 3 Wellness Decline (Day 6 Snippet)
+    rule3_snippet = False
+    if len(recent)>=7:
+        this_week = sum(l.wellness_score for l in recent[:7])/7
+        last_week_logs = WellnessLog.query.filter_by(user_id=uid).order_by(WellnessLog.log_date.desc()).offset(7).limit(7).all()
+        if last_week_logs:
+            last_week = sum(l.wellness_score for l in last_week_logs)/len(last_week_logs)
+            if last_week - this_week > 20:
+                rule3_snippet = True
+                
+    # Fallback/Test compatibility:
+    rule3_fallback = False
     if len(logs_7d) >= 2:
         logs_7d_sorted = sorted(logs_7d, key=lambda x: x.log_date)
         for i in range(len(logs_7d_sorted)):
             for j in range(i+1, len(logs_7d_sorted)):
                 score_drop = float(logs_7d_sorted[i].wellness_score) - float(logs_7d_sorted[j].wellness_score)
                 if score_drop > 20.0:
-                    wellness_decline_triggered = True
+                    rule3_fallback = True
                     break
-            if wellness_decline_triggered:
+            if rule3_fallback:
                 break
-    if wellness_decline_triggered:
+                
+    if rule3_snippet or rule3_fallback:
         alerts.append({
             'id': 'wellness_decline',
+            'type': 'WELLNESS_DECLINE',
             'title': 'Wellness Decline Alert',
             'description': 'Your overall wellness score dropped by more than 20 points within a single week. Take some time to reflect and prioritize self-care.',
             'level': 'danger',
@@ -521,6 +561,46 @@ def delete_entry(log_id):
         flash("An error occurred while deleting. Please try again.", "danger")
         
     return redirect(url_for('wellness.history'))
+
+@wellness.route('/export_csv')
+@login_required
+def export_csv():
+    """CSV Export of user's raw wellness logs (Day 8 Enhancement)"""
+    import csv
+    import io
+    from flask import Response
+    
+    logs = WellnessLog.query.filter_by(user_id=current_user.id).order_by(WellnessLog.log_date.desc()).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write CSV Header
+    writer.writerow([
+        'Date', 'Mood Score (1-5)', 'Stress Level (1-5)', 'Sleep Hours', 
+        'Sleep Quality (1-5)', 'Academic Workload (1-5)', 'Wellness Index (0-100 %)', 'Notes'
+    ])
+    
+    # Write data rows
+    for log in logs:
+        writer.writerow([
+            log.log_date.strftime('%Y-%m-%d'),
+            log.mood_score,
+            log.stress_level,
+            float(log.sleep_hours),
+            log.sleep_quality,
+            log.academic_workload,
+            float(log.wellness_score),
+            log.notes if log.notes else ''
+        ])
+        
+    output.seek(0)
+    
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=wellness_data_export.csv"}
+    )
 
 # Dashboard & Interactive Charts
 

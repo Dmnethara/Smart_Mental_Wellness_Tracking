@@ -100,3 +100,37 @@
   * **Security Audit**: Verified `.env` is ignored by Git, all admin/counselor routes are protected, and SQLAlchemy ORM parameterization protects against SQL injection.
   * **Academic Documentation**: Authored [Final_Report.md](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/docs/Final_Report.md) outlining the Specification & Design of the Data Analysis Engine (Section 3.4) and actual results of the seeded 7-day test data (Chapter 5) to secure maximum academic marks.
 
+## Day 8: CSV Data Export Enhancement
+* **Date:** 2026-06-26
+* **Milestones:**
+  * Implemented CSV Data Export `/export_csv` route under `wellness` blueprint in [wellness.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/wellness.py).
+  * Generated a dynamically compiled CSV file containing student log history metrics and notes, returned as a downloadable attachment.
+  * Added the export CSV button to the dashboard layout in [dashboard.html](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/templates/dashboard.html).
+
+## Day 9: Counselor Panel & Privacy by Design
+* **Date:** 2026-06-27
+* **Milestones:**
+  * Enforced "Privacy by Design" in [admin.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/admin.py) by utilizing SQLAlchemy `defer(WellnessLog.notes)` to omit retrieval of qualitative user diaries in administrative requests.
+  * Masked student notes in [student_detail.html](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/templates/admin/student_detail.html) with a secure locked indicator badge, protecting student confidentiality.
+
+## Day 10: Pytest Test Branch & Session Security
+* **Date:** 2026-06-28
+* **Milestones:**
+  * Created test branch for verification and configured session parameters in [config.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/config.py) (`SESSION_COOKIE_SECURE=True`, `SESSION_COOKIE_HTTPONLY=True`, `PERMANENT_SESSION_LIFETIME=2h`).
+  * Enforced permanent session lifetime at login in [auth.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/auth.py).
+  * Verified all 26 pytest unit and integration tests passed.
+
+## Day 11-12: Academic Report Security Chapter
+* **Date:** 2026-06-29
+* **Milestones:**
+  * Authored Chapter 4 "Implementation Methodology & Security" inside the academic final report [Final_Report.md](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/docs/Final_Report.md).
+  * Dedicated section 4.2 to detail Bcrypt password hashing, CSRF tokens, access control levels, session configuration, and Privacy by Design implementation details.
+
+## Day 13-14: Final Code Review & Submission Prep
+* **Date:** 2026-06-30
+* **Milestones:**
+  * Fixed wellness score rounding to exactly 2 decimal places in [models.py](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/models.py).
+  * Created a comprehensive setup guide and test account tables in [README.md](file:///c:/Users/user/Desktop/Wellness Tracking system/Smart_Mental_Wellness_Tracking/README.md).
+  * Updated `.gitignore` to prevent committing SQLite databases and generated matplotlib static charts.
+  * Executed final test runs verifying all system modules function correctly with zero crashes.
+

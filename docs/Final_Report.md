@@ -69,6 +69,42 @@ The system runs a multi-rule heuristic risk assessment to trigger targeted alert
 
 ---
 
+## Chapter 4: Implementation Methodology & Security
+
+### 4.1 Implementation Overview
+The Smart Student Mental Wellness Tracking & Analytics System is implemented using Flask, a lightweight Python WSGI web application framework. By leveraging SQLAlchemy Object-Relational Mapper (ORM), the system separates data modeling, application logic, and user interface delivery (MVT architecture). Dynamic frontend charting is rendered via Chart.js, while static report generation uses Matplotlib and ReportLab PDF drawing capabilities. 
+
+### 4.2 Security Implementation
+To handle highly sensitive mental health and lifestyle data, security protocols are integrated throughout all layers of the application. The specific components are detailed below:
+
+#### 4.2.1 Password Hashing (Flask-Bcrypt)
+Plaintext passwords represent a critical vulnerability. The system integrates `Flask-Bcrypt`, utilizing the blowfish block cipher hashing algorithm to securely hash passwords during student registration via `bcrypt.generate_password_hash(password).decode("utf-8")`. During user authentication at login, the system verifies credentials using `bcrypt.check_password_hash(stored_hash, password)`. Plaintext, MD5, or SHA1 hashes are never stored in the MySQL database.
+
+#### 4.2.2 Cross-Site Request Forgery (CSRF) Protection
+Cross-Site Request Forgery is mitigated using Flask-WTF's `CSRFProtect` middleware. By calling `csrf.init_app(app)` during application factory execution, all state-changing HTTP requests (POST, PUT, PATCH, DELETE) require a cryptographic token. Every form across the templates includes the hidden tag `{{ csrf_token() }}`, blocking unauthorized requests from third-party sites.
+
+#### 4.2.3 Session Security & Timeout Management
+Client session state is secured against hijacking and physical terminal abandonment through explicit configuration:
+* `SESSION_COOKIE_SECURE = True`: Forces browsers to only transmit cookies over encrypted HTTPS channels, protecting credentials against sniffing attacks.
+* `SESSION_COOKIE_HTTPONLY = True`: Blocks client-side JavaScript access to cookies, preventing Cross-Site Scripting (XSS) token extraction.
+* `PERMANENT_SESSION_LIFETIME = timedelta(hours=2)` & `session.permanent = True`: Enforces a hard auto-logout after 2 hours of inactivity to guard against unauthorized access on shared university workstations.
+
+#### 4.2.4 Role & Ownership Access Control
+The application enforces strict access controls on every data-accessing endpoint:
+* **Route Roles:** Access to administrative dashboards, registry lists, alerts, and system analytics is restricted to authorized roles (e.g., `admin` and `counselor`) using custom decorators (`@admin_required`, `@counselor_required`) checking `current_user.role`.
+* **Data Ownership:** Every route accessing or modifying student log entries (viewing history, editing, or deleting logs) checks that `log.user_id` matches the authenticated `current_user.id`. Route parameters are never trusted without verified ownership.
+
+#### 4.2.5 Privacy by Design
+In compliance with ethical mental health data standards, the administrative and counselor dashboards operate on the **Privacy by Design** principle:
+* **Aggregated Data Oversight:** Administrators and counselors can view student indicators, statistical averages, streaks, and risk engine alerts (e.g., highlighting at-risk students for counseling).
+* **Diary Confidentiality:** Individual qualitative notes (student diary entries) are private. To ensure databases do not leak notes in admin views, administrative queries explicitly defer the notes field:
+  ```python
+  logs_all = db.session.query(WellnessLog).options(defer(WellnessLog.notes)).filter_by(...)
+  ```
+  Correspondingly, the notes field is masked in administrative templates, displaying a secure `Private Note` indicator rather than raw text.
+
+---
+
 ## Chapter 5: Results & Analysis
 
 ### 5.1 System Walkthrough & Chart Verification

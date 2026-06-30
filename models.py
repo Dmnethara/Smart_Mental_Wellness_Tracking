@@ -80,7 +80,7 @@ def calculate_wellness_score(mapper, connection, target):
         sleep_h_comp = min(sleep_h / 8.0, 1.0) * 20
         workload_comp = (6 - workload) * 20
         
-        target.wellness_score = (mood_comp + stress_comp + sleep_q_comp + sleep_h_comp + workload_comp) / 5.0
+        target.wellness_score = round((mood_comp + stress_comp + sleep_q_comp + sleep_h_comp + workload_comp) / 5.0, 2)
     except (TypeError, ValueError):
         # Fallback in case of invalid or missing values
         target.wellness_score = 0.0

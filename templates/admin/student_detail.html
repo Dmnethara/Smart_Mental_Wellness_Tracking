@@ -195,7 +195,7 @@
                                 <th class="text-center">Sleep Quality</th>
                                 <th class="text-center">Academic Workload</th>
                                 <th class="text-center">Wellness Index</th>
-                                <th>Notes</th>
+                                <th class="text-center">Notes Access</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -209,11 +209,11 @@
                                         <td class="text-center">{{ log.sleep_quality }}/5</td>
                                         <td class="text-center">{{ log.academic_workload }}/5</td>
                                         <td class="text-center fw-bold text-success">{{ log.wellness_score }}%</td>
-                                        <td class="text-muted small">
+                                        <td class="text-center">
                                             {% if log.notes %}
-                                                {{ log.notes }}
+                                                <span class="badge bg-secondary-subtle text-secondary border px-2.5 py-1 fw-semibold"><i class="bi bi-lock-fill me-1"></i>Private Note</span>
                                             {% else %}
-                                                <em class="text-slate-400">No notes</em>
+                                                <em class="text-slate-400 small">No notes</em>
                                             {% endif %}
                                         </td>
                                     </tr>

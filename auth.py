@@ -103,6 +103,7 @@ def login():
                 return render_template('login.html')
                 
             login_user(user)
+            session.permanent = True
             flash(f"Welcome back, {user.name}!", "success")
             return redirect(url_for('home'))
         else:

@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models import db, User, WellnessLog
 from decorators import admin_required
+from sqlalchemy.orm import defer
 from datetime import datetime, timedelta
 from collections import Counter
 import json
@@ -210,7 +211,7 @@ def student_detail(student_id):
     show_risk_banner = check_high_stress_risk(student.id)
     active_alerts = run_risk_engine(student.id)
     
-    logs_all = WellnessLog.query.filter_by(user_id=student.id).order_by(WellnessLog.log_date.desc()).all()
+    logs_all = db.session.query(WellnessLog).options(defer(WellnessLog.notes)).filter_by(user_id=student.id).order_by(WellnessLog.log_date.desc()).all()
     stats, correlation_msg, weekday_msg = compute_analytics(logs_all)
     
     # Generate Chart.js structures
